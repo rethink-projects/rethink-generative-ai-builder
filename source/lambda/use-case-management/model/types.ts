@@ -41,6 +41,7 @@ export interface LlmParams {
     PromptParams?: PromptParams;
     ModelParams?: Object;
     Temperature?: number;
+    MaxTokens?: number;
     RAGEnabled?: boolean;
     Streaming?: boolean;
     Verbose?: boolean;

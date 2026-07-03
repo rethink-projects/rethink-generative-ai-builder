@@ -80,6 +80,24 @@ describe('AgentBuilderUseCaseDeploymentAdapter', () => {
         });
     });
 
+    it('should carry MaxTokens into the configuration when provided', () => {
+        process.env[IS_INTERNAL_USER_ENV_VAR] = 'true';
+        const eventWithMaxTokens = {
+            ...createAgentBuilderUseCaseApiEvent,
+            body: JSON.stringify({
+                ...JSON.parse(createAgentBuilderUseCaseApiEvent.body),
+                LlmParams: {
+                    ...JSON.parse(createAgentBuilderUseCaseApiEvent.body).LlmParams,
+                    MaxTokens: 8192
+                }
+            })
+        };
+
+        const useCase = new AgentBuilderUseCaseDeploymentAdapter(eventWithMaxTokens as any as APIGatewayEvent);
+
+        expect((useCase.configuration as any).LlmParams?.MaxTokens).toEqual(8192);
+    });
+
     it('should have the correct cfnParameters', () => {
         process.env[IS_INTERNAL_USER_ENV_VAR] = 'true';
 

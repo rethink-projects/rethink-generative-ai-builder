@@ -45,7 +45,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_initialization_success(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -107,7 +107,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_bedrock_model_creation(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -143,7 +143,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_agent_creation(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -184,7 +184,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_get_methods(self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager):
         """Test get_agent and get_config methods"""
         # Setup mocks
@@ -216,7 +216,7 @@ class TestConfigurableAgent(unittest.TestCase):
 
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_inference_profile_model_creation(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper
     ):
@@ -275,7 +275,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_tool_loading_with_mcp_servers(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -352,7 +352,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_tool_loading_failure_graceful_handling(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -388,7 +388,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_env_vars_extracted_from_model_params(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -441,7 +441,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_env_vars_value_field_extraction(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -483,7 +483,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_env_vars_set_with_correct_names(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -540,7 +540,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_non_env_prefixed_params_ignored(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -591,7 +591,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     @patch("configurable_agent.logger")
     def test_env_vars_logging(
         self, mock_logger, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
@@ -649,7 +649,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_env_vars_no_model_params(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -681,7 +681,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_env_vars_legacy_format_support(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -723,7 +723,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     @patch("configurable_agent.logger")
     def test_env_vars_missing_value_field_warning(
         self, mock_logger, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
@@ -768,7 +768,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_memory_enabled_with_session_manager(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -791,7 +791,6 @@ class TestConfigurableAgent(unittest.TestCase):
 
         mock_session_manager = MagicMock()
 
-
         agent = ConfigurableAgent("test-table", "test-key", "us-east-1", mock_session_manager)
 
         # Verify Agent was called with session_manager
@@ -803,7 +802,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_memory_disabled_ignores_session_manager(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -840,7 +839,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_custom_tools_loading(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -893,7 +892,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_cross_region_inference_profile_detection(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -920,14 +919,14 @@ class TestConfigurableAgent(unittest.TestCase):
         mock_agent_instance = MagicMock()
         mock_agent.return_value = mock_agent_instance
 
-        with patch("configurable_agent.logger") as mock_logger:
+        with patch("gaab_strands_common.base_agent.logger") as mock_logger:
             agent = ConfigurableAgent("test-table", "test-key", "us-east-1")
 
             # Verify cross-region profile was detected and logged
             cross_region_log_calls = [
                 call
                 for call in mock_logger.info.call_args_list
-                if "Detected cross-region inference profile" in str(call)
+                if "Cross-region inference profile detected" in str(call)
             ]
             self.assertEqual(len(cross_region_log_calls), 1)
             self.assertIn(
@@ -937,7 +936,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_session_manager_parameter(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -983,7 +982,7 @@ class TestConfigurableAgent(unittest.TestCase):
 
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_model_creation_error_handling(
         self, mock_bedrock_model, mock_ddb_helper, mock_tools_manager
     ):
@@ -1007,7 +1006,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_get_methods_error_handling(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):
@@ -1028,7 +1027,7 @@ class TestConfigurableAgent(unittest.TestCase):
     @patch("configurable_agent.ToolsManager")
     @patch("configurable_agent.DynamoDBHelper")
     @patch("configurable_agent.Agent")
-    @patch("configurable_agent.BedrockModel")
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_comprehensive_tool_configuration(
         self, mock_bedrock_model, mock_agent, mock_ddb_helper, mock_tools_manager
     ):

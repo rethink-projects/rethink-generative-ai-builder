@@ -319,13 +319,30 @@ export const createLLMParamsApiParams = (
         return modelParamsObject;
     };
 
+    // Empty inference params are omitted on create (model defaults apply) and sent as
+    // explicit null on edit, so the backend removes them from the merged config
+    // (some models reject e.g. the temperature parameter).
+    const hasValue = (value) => value !== '' && value !== null && value !== undefined && !Number.isNaN(value);
+    const clearableParam = (value, parser) => {
+        if (hasValue(value)) {
+            return { present: true, value: parser(value) };
+        }
+        return deploymentAction === DEPLOYMENT_ACTIONS.EDIT ? { present: true, value: null } : { present: false };
+    };
     const llmParamsPayload = {
         Streaming: modelStepInfo.streaming,
         Verbose: modelStepInfo.verbose,
         ModelParams: modelParamsObjectCreator(modelStepInfo.modelParameters),
-        Temperature: parseFloat(modelStepInfo.temperature),
         RAGEnabled: isRagEnabled
     };
+    const temperatureParam = clearableParam(modelStepInfo.temperature, (v) => parseFloat(v));
+    if (temperatureParam.present) {
+        llmParamsPayload.Temperature = temperatureParam.value;
+    }
+    const maxTokensParam = clearableParam(modelStepInfo.maxTokens, (v) => parseInt(v, 10));
+    if (maxTokensParam.present) {
+        llmParamsPayload.MaxTokens = maxTokensParam.value;
+    }
 
     let providerSpecificParams = {};
     switch (modelStepInfo.modelProvider.value) {

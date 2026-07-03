@@ -37,7 +37,27 @@ export class ConfigMergeUtils {
         }
         mergedConfig = this.resolveKnowledgeBaseParamsOnUpdate(newConfigObj, mergedConfig);
         mergedConfig = this.resolveBedrockModelSourceOnUpdate(newConfigObj, mergedConfig);
+        mergedConfig = this.resolveClearableInferenceParamsOnUpdate(newConfigObj, mergedConfig);
 
+        return mergedConfig;
+    }
+
+    /**
+     * Resolve clearable inference params (Temperature, MaxTokens) on update.
+     * An explicit null in the update request removes the parameter from the merged
+     * config, so the model's own defaults apply. Omitting the field keeps the
+     * existing value (standard merge semantics).
+     *
+     * @param updateConfig The new config object coming from an update request
+     * @param mergedConfig A merged config from existing and new configs
+     * @returns Resolved config without explicitly cleared inference params
+     */
+    static resolveClearableInferenceParamsOnUpdate(updateConfig: any, mergedConfig: any): any {
+        for (const param of ['Temperature', 'MaxTokens']) {
+            if (updateConfig.LlmParams && _.get(updateConfig.LlmParams, param, undefined) === null) {
+                delete mergedConfig.LlmParams[param];
+            }
+        }
         return mergedConfig;
     }
 

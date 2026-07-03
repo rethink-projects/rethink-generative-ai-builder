@@ -3,6 +3,7 @@
 
 import { ColumnLayout, SpaceBetween } from '@cloudscape-design/components';
 import { ModelTemperature } from './common/ModelTemperature';
+import { ModelMaxTokens } from './common/ModelMaxTokens';
 import { BaseFormComponentProps, ModelProviderOption } from '../interfaces';
 import VerboseToggle from './common/VerboseToggle';
 import { StreamingToggle } from './common/StreamingToggle';
@@ -21,6 +22,7 @@ export const ModelAdditionalSettings = (props: ModelAdditionalSettingsProps) => 
     return (
         <SpaceBetween size="l" data-testid="model-additional-settings">
             <ModelTemperature {...props} />
+            <ModelMaxTokens {...props} />
             {props.modelData.modelProvider.value.toLowerCase() === MODEL_PROVIDER_NAME_MAP.Bedrock.toLowerCase() && (
                 <>
                     <EnableGuardrailsRadio {...props} />

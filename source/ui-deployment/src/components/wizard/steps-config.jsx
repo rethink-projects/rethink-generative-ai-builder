@@ -155,6 +155,7 @@ export const DEFAULT_STEP_INFO = {
         modelParameters: [],
         inError: false,
         temperature: 0.1,
+        maxTokens: '',
         verbose: false,
         streaming: false,
         multimodalEnabled: false,

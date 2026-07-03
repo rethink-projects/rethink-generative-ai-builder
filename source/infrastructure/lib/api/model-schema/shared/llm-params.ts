@@ -211,12 +211,18 @@ export const llmParamsSchema: JsonSchema = {
             additionalProperties: false
         },
         Temperature: {
-            type: JsonSchemaType.NUMBER,
+            type: [JsonSchemaType.NUMBER, JsonSchemaType.NULL],
             description:
-                'Temperature value which will be fed to the LLM. Scale should be chosen based on the supported range of the model provider.',
+                'Temperature value which will be fed to the LLM. Scale should be chosen based on the supported range of the model provider. An explicit null clears the parameter so the model default applies.',
             default: 0,
             minimum: 0,
             maximum: 100
+        },
+        MaxTokens: {
+            type: [JsonSchemaType.INTEGER, JsonSchemaType.NULL],
+            description:
+                'Maximum number of output tokens the LLM may generate in a single response. When omitted or null, the model default is used.',
+            minimum: 1
         },
         Streaming: {
             type: JsonSchemaType.BOOLEAN,
@@ -447,12 +453,18 @@ export const llmParamsUpdateSchema: JsonSchema = {
             additionalProperties: false
         },
         Temperature: {
-            type: JsonSchemaType.NUMBER,
+            type: [JsonSchemaType.NUMBER, JsonSchemaType.NULL],
             description:
-                'Temperature value which will be fed to the LLM. Scale should be chosen based on the supported range of the model provider.',
+                'Temperature value which will be fed to the LLM. Scale should be chosen based on the supported range of the model provider. An explicit null clears the parameter so the model default applies.',
             default: 0,
             minimum: 0,
             maximum: 100
+        },
+        MaxTokens: {
+            type: [JsonSchemaType.INTEGER, JsonSchemaType.NULL],
+            description:
+                'Maximum number of output tokens the LLM may generate in a single response. When omitted or null, the model default is used.',
+            minimum: 1
         },
 
         Streaming: {

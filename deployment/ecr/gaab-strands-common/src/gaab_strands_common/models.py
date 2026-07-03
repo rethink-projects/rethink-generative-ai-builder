@@ -340,7 +340,8 @@ class LlmParams(BaseModel):
     """LLM parameters"""
 
     model_provider: str = Field(alias="ModelProvider")
-    temperature: float = Field(default=0.7, alias="Temperature")
+    temperature: Optional[float] = Field(default=None, alias="Temperature")
+    max_tokens: Optional[int] = Field(default=None, gt=0, alias="MaxTokens")
     streaming: bool = Field(default=True, alias="Streaming")
     verbose: bool = Field(default=False, alias="Verbose")
     bedrock_llm_params: BedrockLlmParams = Field(alias="BedrockLlmParams")

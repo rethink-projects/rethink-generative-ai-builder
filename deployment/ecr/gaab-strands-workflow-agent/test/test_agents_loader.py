@@ -489,7 +489,6 @@ class TestAgentsLoaderModelCreation:
         mock_bedrock_model.assert_called_once_with(
             model_id="amazon.nova-lite-v1:0",
             region_name="us-east-1",
-            temperature=0.7,
             streaming=True,
         )
 

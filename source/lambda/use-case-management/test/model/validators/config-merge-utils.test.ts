@@ -126,6 +126,70 @@ describe('ConfigMergeUtils', () => {
 
             expect(result).toEqual(newConfig);
         });
+
+        it('should remove Temperature when update sets it to null', async () => {
+            const existingConfig = {
+                UseCaseName: 'existing-name',
+                LlmParams: {
+                    ModelProvider: CHAT_PROVIDERS.BEDROCK,
+                    Temperature: 1.0,
+                    MaxTokens: 4096
+                }
+            };
+
+            const newConfig = {
+                LlmParams: {
+                    Temperature: null
+                }
+            };
+
+            const result = await ConfigMergeUtils.mergeConfigs(existingConfig, newConfig);
+
+            expect(result.LlmParams).not.toHaveProperty('Temperature');
+            expect(result.LlmParams.MaxTokens).toEqual(4096);
+        });
+
+        it('should remove MaxTokens when update sets it to null and keep omitted fields', async () => {
+            const existingConfig = {
+                UseCaseName: 'existing-name',
+                LlmParams: {
+                    ModelProvider: CHAT_PROVIDERS.BEDROCK,
+                    Temperature: 0.7,
+                    MaxTokens: 4096
+                }
+            };
+
+            const newConfig = {
+                LlmParams: {
+                    MaxTokens: null
+                }
+            };
+
+            const result = await ConfigMergeUtils.mergeConfigs(existingConfig, newConfig);
+
+            expect(result.LlmParams).not.toHaveProperty('MaxTokens');
+            expect(result.LlmParams.Temperature).toEqual(0.7);
+        });
+
+        it('should update MaxTokens when a new value is provided', async () => {
+            const existingConfig = {
+                UseCaseName: 'existing-name',
+                LlmParams: {
+                    ModelProvider: CHAT_PROVIDERS.BEDROCK,
+                    MaxTokens: 2048
+                }
+            };
+
+            const newConfig = {
+                LlmParams: {
+                    MaxTokens: 16384
+                }
+            };
+
+            const result = await ConfigMergeUtils.mergeConfigs(existingConfig, newConfig);
+
+            expect(result.LlmParams.MaxTokens).toEqual(16384);
+        });
     });
 
     describe('resolveBedrockModelSourceOnUpdate', () => {

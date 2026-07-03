@@ -10,8 +10,7 @@ import logging
 import os
 from typing import Any, List, Optional
 
-from gaab_strands_common import DynamoDBHelper, ToolsManager, UseCaseConfig
-from gaab_strands_common.utils.helpers import build_guardrail_config, create_boto_config
+from gaab_strands_common import BaseAgent, DynamoDBHelper, ToolsManager, UseCaseConfig
 from strands import Agent
 from strands.models import BedrockModel
 from strands.session import SessionManager
@@ -19,7 +18,7 @@ from strands.session import SessionManager
 logger = logging.getLogger(__name__)
 
 
-class ConfigurableAgent:
+class ConfigurableAgent(BaseAgent):
     """Configurable Strands Agent that loads configuration from DynamoDB"""
 
     def __init__(
@@ -32,12 +31,11 @@ class ConfigurableAgent:
         """
         Initialize ConfigurableAgent
         """
+        super().__init__(region)
         self.table_name = table_name
         self.config_key = config_key
-        self.region = region
         self.session_manager = session_manager
 
-        self.config: Optional[UseCaseConfig] = None
         self.agent: Optional[Agent] = None
         self.ddb_helper: Optional[DynamoDBHelper] = None
         self.tools_manager: Optional[ToolsManager] = None
@@ -167,37 +165,7 @@ class ConfigurableAgent:
         if not self.config:
             raise ValueError("No configuration loaded")
 
-        bedrock_params = self.config.llm_params.bedrock_llm_params
-
-        # Log environment and configuration for debugging
-        logger.info(f"Environment AWS_REGION: {os.getenv('AWS_REGION')}")
-        logger.info(f"Configured region: {self.region}")
-        logger.info(f"Inference type: {bedrock_params.bedrock_inference_type}")
-        logger.info(f"Model identifier from config: {bedrock_params.model_identifier}")
-
-        # Check if this is a cross-region inference profile
-        is_cross_region_profile = bedrock_params.model_identifier.startswith("us.")
-        if is_cross_region_profile:
-            logger.info(
-                f"Detected cross-region inference profile: {bedrock_params.model_identifier}"
-            )
-
-        # Create Botocore Config with retry settings and user agent
-        boto_config = create_boto_config(self.region)
-
-        # Build guardrail configuration if available
-        guardrail_config = build_guardrail_config(bedrock_params)
-
-        model_config = {
-            "model_id": bedrock_params.model_identifier,
-            "region_name": self.region,
-            "temperature": self.config.llm_params.temperature,
-            "streaming": self.config.llm_params.streaming,
-            "boto_client_config": boto_config,
-            **guardrail_config,
-        }
-
-        return BedrockModel(**model_config)
+        return super()._create_model(self.config.llm_params)
 
     def _create_agent(self):
         """Create Strands agent with loaded configuration"""

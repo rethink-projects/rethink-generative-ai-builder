@@ -59,6 +59,7 @@ class BaseAgent:
             f"  - model_id: {bedrock_params.model_identifier}\n"
             f"  - region_name: {self.region}\n"
             f"  - temperature: {llm_params.temperature}\n"
+            f"  - max_tokens: {llm_params.max_tokens}\n"
             f"  - streaming: {llm_params.streaming}"
         )
 
@@ -68,19 +69,42 @@ class BaseAgent:
         # Build guardrail configuration if available
         guardrail_config = build_guardrail_config(bedrock_params)
 
-        model_config = {
-            "model_id": bedrock_params.model_identifier,
-            "region_name": self.region,
-            "temperature": llm_params.temperature,
-            "streaming": llm_params.streaming,
-            "boto_client_config": boto_config,
-            **guardrail_config,
-        }
+        model_config = self._build_model_kwargs(llm_params, boto_config, guardrail_config)
 
         bedrock_model = BedrockModel(**model_config)
         logger.info("BedrockModel instance created successfully")
 
         return bedrock_model
+
+    def _build_model_kwargs(self, llm_params: LlmParams, boto_config, guardrail_config: dict) -> dict:
+        """
+        Build BedrockModel kwargs from LLM parameters.
+
+        Temperature and max_tokens are only included when explicitly configured:
+        some models (e.g. Claude Sonnet 5) reject the temperature parameter, so
+        omitting it defers to the model's default behavior.
+
+        Args:
+            llm_params: LLM configuration parameters
+            boto_config: Botocore Config for the Bedrock client
+            guardrail_config: Guardrail kwargs (possibly empty)
+
+        Returns:
+            dict: kwargs for BedrockModel
+        """
+        bedrock_params = llm_params.bedrock_llm_params
+        model_config = {
+            "model_id": bedrock_params.model_identifier,
+            "region_name": self.region,
+            "streaming": llm_params.streaming,
+            "boto_client_config": boto_config,
+            **guardrail_config,
+        }
+        if llm_params.temperature is not None:
+            model_config["temperature"] = llm_params.temperature
+        if llm_params.max_tokens is not None:
+            model_config["max_tokens"] = llm_params.max_tokens
+        return model_config
 
     def _validate_use_case_type(self, config_dict: dict, expected_type: str):
         """

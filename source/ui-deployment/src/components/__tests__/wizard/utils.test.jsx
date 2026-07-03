@@ -761,7 +761,6 @@ describe('createWorkflowApiParams', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         }
@@ -812,7 +811,6 @@ describe('createWorkflowApiParams', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         },
@@ -836,7 +834,6 @@ describe('createWorkflowApiParams', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         },
@@ -860,7 +857,6 @@ describe('createWorkflowApiParams', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         }
@@ -1224,6 +1220,7 @@ describe('createUpdateRequestPayload', () => {
                     RephraseQuestion: true
                 },
                 Temperature: 0.1,
+                MaxTokens: null,
                 RAGEnabled: true
             },
             VpcParams: {
@@ -1295,6 +1292,7 @@ describe('createUpdateRequestPayload', () => {
                     RephraseQuestion: true
                 },
                 Temperature: 0.1,
+                MaxTokens: null,
                 RAGEnabled: true
             },
             VpcParams: {
@@ -1841,7 +1839,6 @@ describe('Workflow API Integration Tests', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         },
@@ -1865,7 +1862,6 @@ describe('Workflow API Integration Tests', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         }
@@ -1922,6 +1918,7 @@ describe('Workflow API Integration Tests', () => {
                     }
                 },
                 Temperature: 0.1,
+                MaxTokens: null,
                 RAGEnabled: undefined,
                 MultimodalParams: {
                     MultimodalEnabled: false
@@ -1953,7 +1950,6 @@ describe('Workflow API Integration Tests', () => {
                                 ModelProvider: 'Bedrock',
                                 RAGEnabled: undefined,
                                 Streaming: false,
-                                Temperature: 0,
                                 Verbose: false
                             }
                         }
@@ -2001,7 +1997,6 @@ describe('Workflow API Integration Tests', () => {
                 ModelProvider: 'Bedrock',
                 RAGEnabled: undefined,
                 Streaming: false,
-                Temperature: 0,
                 Verbose: false
             }
         });
@@ -2025,7 +2020,6 @@ describe('Workflow API Integration Tests', () => {
                 ModelProvider: 'Bedrock',
                 RAGEnabled: undefined,
                 Streaming: false,
-                Temperature: 0,
                 Verbose: false
             }
         });
@@ -2067,7 +2061,6 @@ describe('Workflow API Integration Tests', () => {
                     ModelProvider: 'Bedrock',
                     RAGEnabled: undefined,
                     Streaming: false,
-                    Temperature: 0,
                     Verbose: false
                 }
             },
@@ -2091,7 +2084,6 @@ describe('Workflow API Integration Tests', () => {
                     ModelProvider: 'Bedrock',
                     RAGEnabled: undefined,
                     Streaming: false,
-                    Temperature: 0,
                     Verbose: false
                 }
             },
@@ -2115,7 +2107,6 @@ describe('Workflow API Integration Tests', () => {
                     ModelProvider: 'Bedrock',
                     RAGEnabled: undefined,
                     Streaming: false,
-                    Temperature: 0,
                     Verbose: false
                 }
             }

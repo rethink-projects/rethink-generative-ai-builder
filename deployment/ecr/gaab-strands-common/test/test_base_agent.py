@@ -54,6 +54,46 @@ class TestCreateModel:
         assert call_kwargs["streaming"] is True
 
     @patch("gaab_strands_common.base_agent.BedrockModel")
+    def test_create_model_omits_temperature_when_not_configured(self, mock_bedrock_model):
+        """Temperature must not be sent to Bedrock unless explicitly configured"""
+        agent = BaseAgent("us-east-1")
+
+        llm_params = LlmParams(
+            ModelProvider="Bedrock",
+            Streaming=True,
+            Verbose=False,
+            BedrockLlmParams=BedrockLlmParams(ModelId="amazon.nova-pro-v1:0", BedrockInferenceType="QUICK_START"),
+            ModelParams={},
+        )
+
+        agent._create_model(llm_params)
+
+        call_kwargs = mock_bedrock_model.call_args[1]
+        assert "temperature" not in call_kwargs
+        assert "max_tokens" not in call_kwargs
+
+    @patch("gaab_strands_common.base_agent.BedrockModel")
+    def test_create_model_includes_max_tokens_when_configured(self, mock_bedrock_model):
+        """MaxTokens from config must be passed to BedrockModel as max_tokens"""
+        agent = BaseAgent("us-east-1")
+
+        llm_params = LlmParams(
+            ModelProvider="Bedrock",
+            Temperature=0.5,
+            MaxTokens=8192,
+            Streaming=True,
+            Verbose=False,
+            BedrockLlmParams=BedrockLlmParams(ModelId="amazon.nova-pro-v1:0", BedrockInferenceType="QUICK_START"),
+            ModelParams={},
+        )
+
+        agent._create_model(llm_params)
+
+        call_kwargs = mock_bedrock_model.call_args[1]
+        assert call_kwargs["temperature"] == 0.5
+        assert call_kwargs["max_tokens"] == 8192
+
+    @patch("gaab_strands_common.base_agent.BedrockModel")
     def test_create_model_inference_profile(self, mock_bedrock_model):
         """Test creating model with INFERENCE_PROFILE type"""
         agent = BaseAgent("us-west-2")

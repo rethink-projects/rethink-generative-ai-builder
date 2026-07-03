@@ -244,6 +244,7 @@ export class WorkflowUseCaseDeploymentAdapter extends UseCase {
                 PromptParams: eventBody.LlmParams?.PromptParams,
                 ModelParams: eventBody.LlmParams?.ModelParams,
                 Temperature: eventBody.LlmParams?.Temperature,
+                MaxTokens: eventBody.LlmParams?.MaxTokens,
                 RAGEnabled: eventBody.LlmParams?.RAGEnabled,
                 Streaming: eventBody.LlmParams?.Streaming,
                 Verbose: eventBody.LlmParams?.Verbose,

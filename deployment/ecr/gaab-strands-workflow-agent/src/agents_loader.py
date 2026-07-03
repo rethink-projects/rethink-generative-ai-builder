@@ -270,17 +270,12 @@ class AgentsLoader(BaseAgent):
             BedrockModel with default configuration
         """
         default_model_id = "amazon.nova-lite-v1:0"
-        default_temperature = 0.7
         default_streaming = True
 
-        logger.info(
-            f"Creating default model: {default_model_id} "
-            f"(temperature: {default_temperature}, streaming: {default_streaming})"
-        )
+        logger.info(f"Creating default model: {default_model_id} (streaming: {default_streaming})")
 
         return BedrockModel(
             model_id=default_model_id,
             region_name=self.region,
-            temperature=default_temperature,
             streaming=default_streaming,
         )
