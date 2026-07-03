@@ -73,7 +73,7 @@ export class JavascriptDockerBuild extends DockerBuildTemplate {
      * @param outputDir
      */
     protected build(moduleName: string, outputDir: string): string[] {
-        return ['npm install', 'rm -fr ./node_modules', 'npm ci --omit=dev'];
+        return ['npm install', 'rm -fr ./node_modules', 'npm ci --omit=dev', 'mkdir -p ./node_modules'];
     }
 
     protected postBuild(moduleName: string, outputDir: string): string[] {
@@ -112,7 +112,7 @@ export class JavascriptLocalBuild extends LocalBuildTemplate {
      * @returns
      */
     protected build(moduleName: string, outputDir: string): string[] {
-        return ['npm ci --omit=dev'];
+        return ['npm ci --omit=dev', 'mkdir -p ./node_modules'];
     }
 
     /**

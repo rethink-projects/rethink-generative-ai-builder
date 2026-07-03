@@ -32,7 +32,7 @@ describe('when bundling JS lambda layer', () => {
             JSON.stringify([
                 'bash',
                 '-c',
-                `echo "Executing unit tests" && npm install && npm run test && echo "local bundling failed for ${path.dirname(__dirname).split('/').slice(0, -3).join('/')}/${fakeModule} and hence building with Docker image" && rm -fr /asset-input/node_modules && npm install && rm -fr ./node_modules && npm ci --omit=dev && mkdir -p /asset-output/nodejs/node_modules && cp -au /asset-input/node_modules/* /asset-output/nodejs/node_modules/ && rm -fr /asset-output/.coverage`
+                `echo "Executing unit tests" && npm install && npm run test && echo "local bundling failed for ${path.dirname(__dirname).split('/').slice(0, -3).join('/')}/${fakeModule} and hence building with Docker image" && rm -fr /asset-input/node_modules && npm install && rm -fr ./node_modules && npm ci --omit=dev && mkdir -p ./node_modules && mkdir -p /asset-output/nodejs/node_modules && cp -au /asset-input/node_modules/* /asset-output/nodejs/node_modules/ && rm -fr /asset-output/.coverage`
             ])
         );
     });
@@ -49,6 +49,7 @@ describe('when bundling JS lambda layer', () => {
                 'cd fake-module',
                 'rm -fr node_modules',
                 'npm ci --omit=dev',
+                'mkdir -p ./node_modules',
                 'mkdir -p fake-output-dir/nodejs/node_modules',
                 'cp -R fake-module/node_modules/* fake-output-dir/nodejs/node_modules/',
                 'rm -fr fake-output-dir/.coverage'

@@ -27,7 +27,7 @@ export class TypescriptDockerBuild extends JavascriptDockerBuild {
      * @param outputDir
      */
     protected build(moduleName: string, outputDir: string): string[] {
-        return ['npm install', 'npm run build', 'rm -fr ./node_modules', 'npm ci --omit=dev'];
+        return ['npm install', 'npm run build', 'rm -fr ./node_modules', 'npm ci --omit=dev', 'mkdir -p ./node_modules'];
     }
 
     /**
@@ -58,7 +58,7 @@ export class TypescriptLocalBuild extends JavascriptLocalBuild {
      * @returns
      */
     protected build(moduleName: string, outputDir: string): string[] {
-        return ['npm install', 'npm run build', 'rm -fr ./node_modules', 'npm ci --omit=dev'];
+        return ['npm install', 'npm run build', 'rm -fr ./node_modules', 'npm ci --omit=dev', 'mkdir -p ./node_modules'];
     }
 
     /**
