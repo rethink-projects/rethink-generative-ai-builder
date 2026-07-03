@@ -117,6 +117,39 @@ class TestAgentCoreClient:
             full_text = "".join(chunk.get("text", "") for chunk in content_chunks)
             assert "This is a streaming response from the agent" in full_text
 
+    def test_streaming_multibyte_char_across_chunk_boundary(self):
+        """Multi-byte UTF-8 chars split across 1024-byte read boundaries must decode correctly."""
+        # Build an SSE line where the em dash (3 bytes: 0xE2 0x80 0x94) starts at byte 1023,
+        # so the 1024-byte chunked read splits it across two reads.
+        prefix = 'data: {"type": "content", "text": "'
+        padding = "a" * (1023 - len(prefix.encode("utf-8")))
+        text = padding + "— resposta com acentuação: ação, café, você"
+        sse_line = "data: " + json.dumps({"type": "content", "text": text}, ensure_ascii=False) + "\n"
+
+        dash_index = sse_line.encode("utf-8").index("—".encode("utf-8"))
+        assert dash_index < 1024 <= dash_index + 3, "em dash must straddle the 1024-byte boundary"
+
+        mock_streaming_body = MockStreamingBody(sse_line)
+        mock_response = {"response": mock_streaming_body}
+
+        with patch.object(self.client, "client") as mock_boto_client:
+            mock_boto_client.invoke_agent_runtime.return_value = mock_response
+
+            chunks = list(
+                self.client.invoke_agent(
+                    input_text=self.test_input,
+                    conversation_id=self.test_conversation_id,
+                    user_id=self.test_user_id,
+                )
+            )
+
+            error_chunks = [chunk for chunk in chunks if chunk.get("type") == "error"]
+            assert error_chunks == []
+
+            content_chunks = [chunk for chunk in chunks if chunk.get("type") == "content"]
+            full_text = "".join(chunk.get("text", "") for chunk in content_chunks)
+            assert "— resposta com acentuação: ação, café, você" in full_text
+
     def test_successful_invocation_with_bytes_response(self):
         """Test successful agent invocation with bytes response."""
         response_content = '{"result": "Response from bytes payload."}'

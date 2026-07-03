@@ -3,6 +3,7 @@
 
 """AgentCore client for invoking runtime services."""
 
+import codecs
 import json
 import os
 import time
@@ -210,13 +211,15 @@ class AgentCoreClient:
         """
         chunk_size = 1024  # Read 1KB at a time
         buffer = ""
+        # Incremental decoder buffers multi-byte UTF-8 sequences that straddle chunk boundaries
+        decoder = codecs.getincrementaldecoder("utf-8")()
 
         while True:
             chunk_bytes = response_content.read(chunk_size)
             if not chunk_bytes:
                 break
 
-            chunk_text = chunk_bytes.decode("utf-8")
+            chunk_text = decoder.decode(chunk_bytes)
             buffer += chunk_text
 
             lines = buffer.split("\n")
@@ -225,6 +228,7 @@ class AgentCoreClient:
             for line in lines[:-1]:
                 yield from self._process_stream_line(line, conversation_id)
 
+        buffer += decoder.decode(b"", final=True)
         if buffer.strip():
             yield from self._process_stream_line(buffer, conversation_id)
 
