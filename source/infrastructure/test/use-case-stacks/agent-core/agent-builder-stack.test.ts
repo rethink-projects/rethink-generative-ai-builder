@@ -262,6 +262,23 @@ describe('AgentBuilderStack', () => {
                             Effect: 'Allow',
                             Action: 's3:GetObject',
                             Resource: Match.anyValue()
+                        },
+                        {
+                            Sid: 'ReportWriterS3PutAccess',
+                            Effect: 'Allow',
+                            Action: 's3:PutObject',
+                            Resource: Match.anyValue()
+                        },
+                        {
+                            Sid: 'ReportWriterS3ListAccess',
+                            Effect: 'Allow',
+                            Action: 's3:ListBucket',
+                            Resource: Match.anyValue(),
+                            Condition: {
+                                StringLike: {
+                                    's3:prefix': Match.anyValue()
+                                }
+                            }
                         }
                     ])
                 }

@@ -510,6 +510,23 @@ export abstract class AgentCoreBaseStack extends UseCaseStack {
                     effect: iam.Effect.ALLOW,
                     actions: ['s3:GetObject'],
                     resources: [`arn:${cdk.Aws.PARTITION}:s3:::${multimodalDataBucketName}/${useCaseUUID}/*`]
+                }),
+                new iam.PolicyStatement({
+                    sid: 'ReportWriterS3PutAccess',
+                    effect: iam.Effect.ALLOW,
+                    actions: ['s3:PutObject'],
+                    resources: [`arn:${cdk.Aws.PARTITION}:s3:::${multimodalDataBucketName}/${useCaseUUID}/reports/*`]
+                }),
+                new iam.PolicyStatement({
+                    sid: 'ReportWriterS3ListAccess',
+                    effect: iam.Effect.ALLOW,
+                    actions: ['s3:ListBucket'],
+                    resources: [`arn:${cdk.Aws.PARTITION}:s3:::${multimodalDataBucketName}`],
+                    conditions: {
+                        StringLike: {
+                            's3:prefix': [`${useCaseUUID}/reports/*`]
+                        }
+                    }
                 })
             ]
         });
@@ -523,10 +540,7 @@ export abstract class AgentCoreBaseStack extends UseCaseStack {
         NagSuppressions.addResourceSuppressions(multimodalPermissionsPolicy, [
             {
                 id: 'AwsSolutions-IAM5',
-                reason: 'Wildcard permission required to modify AgentCore Auth Table with name from SSM parameter',
-                appliesTo: [
-                    'Resource::arn:<AWS::Partition>:s3:::{"Fn::If":["MultimodalEnabledCondition",{"Fn::If":["CreateMultimodalResourcesCondition",{"Ref":"MultimodalSetupFactoriesMultimodalDataBucketS3Bucket2540B5CC"},{"Ref":"ExistingMultimodalDataBucket"}]},""]}/<UseCaseUUID>/*'
-                ]
+                reason: 'Wildcard scoped to the use case prefix of the multimodal data bucket: object reads for multimodal input and report writer output under reports/*'
             }
         ]);
     }
