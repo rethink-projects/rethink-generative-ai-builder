@@ -239,6 +239,35 @@ class TestStreamResponseAsync:
     """Tests for async streaming"""
 
     @pytest.mark.asyncio
+    async def test_stream_response_async_appends_download_links(self):
+        """Registered download links are appended as machine-generated chunks before completion"""
+        from gaab_strands_common.utils.download_links import DownloadLinkRegistry
+
+        config = MockConfig()
+        ToolEventEmitter.clear()
+        DownloadLinkRegistry.clear()
+
+        mock_agent = Mock()
+
+        async def mock_stream():
+            # a tool registra o link DURANTE o stream (como finalize_report faz)
+            DownloadLinkRegistry.add("📄 [Baixar dossiê](https://example.com/presigned) _(1h)_")
+            yield MockEvent("Resumo final.")
+
+        mock_agent.stream_async = Mock(return_value=mock_stream())
+
+        chunks = []
+        async for chunk in RuntimeStreaming.stream_response_async(mock_agent, "test", config):
+            chunks.append(chunk)
+
+        content_chunks = [c for c in chunks if c["type"] == "content"]
+        assert any("https://example.com/presigned" in c["text"] for c in content_chunks)
+        # link must come after model text and before completion
+        assert chunks[-1]["type"] == "completion"
+        assert "presigned" in content_chunks[-1]["text"]
+        # registry drained
+        assert DownloadLinkRegistry.drain() == []
+
     async def test_stream_response_async_success(self):
         """Test successful async streaming"""
         config = MockConfig()

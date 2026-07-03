@@ -23,6 +23,7 @@ from strands import tool
 from strands.types.tools import ToolResult
 
 from ..utils.constants import MULTIMODAL_FILES_BUCKET_NAME_ENV_VAR, USE_CASE_UUID
+from ..utils.download_links import DownloadLinkRegistry
 from .setup import BaseCustomTool, auto_attach_when, custom_tool, requires
 from .setup.metadata import ToolCategory
 
@@ -131,16 +132,17 @@ class S3ReportWriterTool(BaseCustomTool):
     def finalize_report(self, report_id: str, report_title: str) -> ToolResult:
         """
         Assemble all stored sections of a report (in section_number order) into a single
-        Markdown file and return a presigned download URL valid for one hour. Call this
-        exactly once, after every section has been written with write_report_section.
+        Markdown file. A download link valid for one hour is appended to your reply
+        automatically — never write the URL yourself. Call this exactly once, after every
+        section has been written with write_report_section.
 
         Args:
             report_id (str, required): The report identifier used in write_report_section.
             report_title (str, required): Title placed at the top of the final document.
 
         Returns:
-            ToolResult with status "success" (final S3 key, section count and a presigned
-            download URL to share with the user as a Markdown link) or "error".
+            ToolResult with status "success" (final S3 key and section count; the download
+            link is delivered to the user automatically) or "error".
         """
         tool_use_id = f"finalize_report_{abs(hash(report_id)) % 10000}"
         try:
@@ -181,6 +183,12 @@ class S3ReportWriterTool(BaseCustomTool):
                 ExpiresIn=PRESIGNED_URL_EXPIRY_SECONDS,
             )
 
+            # Signed URLs are too long for the model to transcribe reliably; register the
+            # ready-made markdown line so the streaming layer appends it verbatim.
+            DownloadLinkRegistry.add(
+                f"📄 [Baixar dossiê completo — {report_id}.md]({download_url}) _(link válido por 1 hora)_"
+            )
+
             logger.info(f"Finalized report '{report_id}' with {len(section_keys)} section(s) at {final_key}")
 
             return {
@@ -189,8 +197,10 @@ class S3ReportWriterTool(BaseCustomTool):
                 "content": [
                     {
                         "text": (
-                            f"Report assembled from {len(section_keys)} section(s) at key: {final_key}\n"
-                            f"Share this download link with the user (valid for 1 hour):\n{download_url}"
+                            f"Report assembled from {len(section_keys)} section(s) at key: {final_key}. "
+                            "The download link will be appended to your reply automatically — do NOT "
+                            "write any URL or link yourself; just tell the user the download link "
+                            "appears at the end of this message."
                         )
                     }
                 ],

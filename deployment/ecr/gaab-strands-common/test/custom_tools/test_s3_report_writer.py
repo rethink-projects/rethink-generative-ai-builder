@@ -63,12 +63,14 @@ def test_registration_metadata():
 
 def test_registration_in_registry():
     """Tool must be discoverable via the registry after auto-discovery"""
-    import importlib
-
-    import gaab_strands_common.custom_tools.s3_report_writer as module
-
-    importlib.reload(module)  # re-register in case another test cleared the singleton
     registry = CustomToolsRegistry()
+    if "s3_report_writer" not in registry.get_all_tools():
+        # another test cleared the singleton; re-import to re-register
+        import importlib
+
+        import gaab_strands_common.custom_tools.s3_report_writer as module
+
+        importlib.reload(module)
     assert "s3_report_writer" in registry.get_all_tools()
 
 
@@ -122,12 +124,21 @@ def test_finalize_report_concatenates_in_order():
     tool.write_report_section("acme-2026", 2, "Concorrentes", "Seção dois.")
     tool.write_report_section("acme-2026", 1, "O Mercado", "Seção um.")
 
+    from gaab_strands_common.utils.download_links import DownloadLinkRegistry
+
+    DownloadLinkRegistry.clear()
     result = tool.finalize_report("acme-2026", "Dossiê Acme")
 
     assert result["status"] == "success"
     text = _text(result)
     assert "2 section(s)" in text
-    assert "https://" in text  # presigned URL present
+    assert "https://" not in text  # URL must NOT pass through the model
+
+    # The presigned URL is registered for machine-appended delivery instead
+    links = DownloadLinkRegistry.drain()
+    assert len(links) == 1
+    assert "https://" in links[0]
+    assert links[0].startswith("📄 [Baixar dossiê completo")
 
     final = s3.get_object(Bucket=BUCKET, Key=f"{UUID}/reports/acme-2026/final.md")["Body"].read().decode("utf-8")
     assert final.startswith("# Dossiê Acme")

@@ -11,6 +11,7 @@ import time
 from typing import Any, AsyncGenerator, Dict, Optional
 
 from gaab_strands_common.tool_wrapper import ToolEventEmitter
+from gaab_strands_common.utils.download_links import DownloadLinkRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +176,7 @@ class RuntimeStreaming:
         """
         start_time = time.time()
         ToolEventEmitter.clear()
+        DownloadLinkRegistry.clear()
 
         try:
             logger.info(f"[RUNTIME_STREAMING] Starting stream for message: {user_message[:100]}...")
@@ -188,6 +190,12 @@ class RuntimeStreaming:
                     usage_metadata = chunk["_usage_metadata"]
                 else:
                     yield chunk
+
+            # Append machine-generated download links (e.g. presigned URLs from
+            # s3_report_writer) as their own chunks: the model cannot transcribe
+            # long signed URLs reliably, so they bypass the model entirely.
+            for markdown_line in DownloadLinkRegistry.drain():
+                yield RuntimeStreaming._create_content_chunk(f"\n\n{markdown_line}\n", config)
 
             # Stream completion
             total_elapsed = time.time() - start_time
