@@ -320,9 +320,9 @@ describe('ImageUriResolver', () => {
             // Should return a CloudFormation function (Fn::If)
             expect(typeof result).toBe('string');
 
-            // Verify conditions were created
+            // Verify conditions were created (fork: only the custom-image override
+            // condition remains; the pipeline default is the account-local ECR repo)
             const template = Template.fromStack(stack);
-            template.hasCondition('IsStandaloneDeploymentConditionForImageUri', {});
             template.hasCondition('HasCustomAgentImageCondition', {});
         });
 

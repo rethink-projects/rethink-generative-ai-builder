@@ -348,35 +348,20 @@ export function resolveImageUriWithConditions(
             });
         }
 
-        // For pipeline deployments, create CloudFormation conditions
-        const isStandaloneDeploymentCondition = new cdk.CfnCondition(
-            construct,
-            'IsStandaloneDeploymentConditionForImageUri',
-            {
-                expression: cdk.Fn.conditionEquals(stackDeploymentSource, StackDeploymentSource.STANDALONE_USE_CASE)
-            }
-        );
-
         // Check if custom image URI is provided (not empty)
         const hasCustomImageCondition = new cdk.CfnCondition(construct, 'HasCustomAgentImageCondition', {
             expression: cdk.Fn.conditionNot(cdk.Fn.conditionEquals(customImageUriParam?.valueAsString ?? '', ''))
         });
 
-        // Shared deployment image URI (shared pull-through cache)
-        const sharedImageUri = cdk.Fn.sub(
-            '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryPrefix}/${ImageName}:${Version}',
+        // Rethink fork: pipeline deployments default to the account-local ECR repository
+        // (populated by stage-assets.sh with fork-built images) instead of the public
+        // pull-through cache, so dashboard-created use cases run the patched images.
+        const defaultImageUri = cdk.Fn.sub(
+            '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ImageName}:${Version}',
             {
-                RepositoryPrefix: sharedEcrCachePrefixParam?.valueAsString,
                 ImageName: imageName,
                 Version: context.gaabVersion
             }
-        );
-
-        // Default image URI based on deployment type (standalone vs shared)
-        const defaultImageUri = cdk.Fn.conditionIf(
-            isStandaloneDeploymentCondition.logicalId,
-            pullThroughCacheUri,
-            sharedImageUri
         );
 
         // Final URI: Custom image if provided, otherwise default
