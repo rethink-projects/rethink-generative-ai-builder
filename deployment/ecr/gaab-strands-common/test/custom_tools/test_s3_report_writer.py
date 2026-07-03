@@ -14,6 +14,16 @@ UUID = "test-use-case-uuid"
 
 
 @pytest.fixture(autouse=True)
+def clear_invocation_context():
+    """Reports are conversation-scoped; keep tests deterministic"""
+    from gaab_strands_common.utils.invocation_context import InvocationContext
+
+    InvocationContext.set_conversation_id(None)
+    yield
+    InvocationContext.set_conversation_id(None)
+
+
+@pytest.fixture(autouse=True)
 def setup_environment(mock_environment):
     """Setup environment variables for all tests"""
     with patch.dict(
@@ -97,7 +107,7 @@ def test_write_section_success():
     result = tool.write_report_section("acme-2026", 1, "Sumário Executivo", "Conteúdo com acentuação — ok.")
 
     assert result["status"] == "success"
-    key = f"{UUID}/reports/acme-2026/01-sumario-executivo.md"
+    key = f"{UUID}/reports/default/acme-2026/01-sumario-executivo.md"
     assert key in _text(result)
     body = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read().decode("utf-8")
     assert body.startswith("## Sumário Executivo")
@@ -140,7 +150,7 @@ def test_finalize_report_concatenates_in_order():
     assert "https://" in links[0]
     assert links[0].startswith("📄 [Baixar dossiê completo")
 
-    final = s3.get_object(Bucket=BUCKET, Key=f"{UUID}/reports/acme-2026/final.md")["Body"].read().decode("utf-8")
+    final = s3.get_object(Bucket=BUCKET, Key=f"{UUID}/reports/default/acme-2026/final.md")["Body"].read().decode("utf-8")
     assert final.startswith("# Dossiê Acme")
     assert final.index("O Mercado") < final.index("Concorrentes")
 
@@ -199,3 +209,28 @@ def test_s3_error_is_graceful(tool):
         result = tool.write_report_section("acme-2026", 1, "T", "c")
     assert result["status"] == "error"
     assert "AccessDenied" in _text(result)
+
+
+@mock_aws
+def test_report_scoped_by_conversation():
+    """The same report_id in different conversations must not share sections"""
+    from gaab_strands_common.utils.invocation_context import InvocationContext
+
+    _create_bucket()
+    tool = _make_tool()
+
+    InvocationContext.set_conversation_id("aaaa1111-2222-3333-4444-555566667777")
+    tool.write_report_section("acme-2026", 1, "Mercado", "conversa A")
+
+    InvocationContext.set_conversation_id("bbbb8888-9999-0000-1111-222233334444")
+    tool.write_report_section("acme-2026", 1, "Mercado", "conversa B")
+
+    assert len(tool._list_section_keys("acme-2026")) == 1  # só a da conversa B
+    keys_b = tool._list_section_keys("acme-2026")
+    assert "/reports/aaaa1111/" not in keys_b[0]
+    assert "/reports/bbbb8888/" in keys_b[0]
+
+    InvocationContext.set_conversation_id("aaaa1111-2222-3333-4444-555566667777")
+    keys_a = tool._list_section_keys("acme-2026")
+    assert len(keys_a) == 1
+    assert "/reports/aaaa1111/" in keys_a[0]

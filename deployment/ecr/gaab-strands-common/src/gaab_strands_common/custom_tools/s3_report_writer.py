@@ -24,6 +24,7 @@ from strands.types.tools import ToolResult
 
 from ..utils.constants import MULTIMODAL_FILES_BUCKET_NAME_ENV_VAR, USE_CASE_UUID
 from ..utils.download_links import DownloadLinkRegistry
+from ..utils.invocation_context import InvocationContext
 from .setup import BaseCustomTool, auto_attach_when, custom_tool, requires
 from .setup.metadata import ToolCategory
 
@@ -105,7 +106,7 @@ class S3ReportWriterTool(BaseCustomTool):
                 )
 
             slug = self._slugify(section_title)
-            s3_key = f"{self.use_case_uuid}/{REPORTS_PREFIX}/{report_id}/{section_number:02d}-{slug}.md"
+            s3_key = f"{self._report_prefix(report_id)}{section_number:02d}-{slug}.md"
             body = f"## {section_title.strip()}\n\n{section_content.strip()}\n"
 
             self.s3_client.put_object(
@@ -165,7 +166,7 @@ class S3ReportWriterTool(BaseCustomTool):
                 obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
                 parts.append(obj["Body"].read().decode("utf-8").strip())
 
-            final_key = f"{self.use_case_uuid}/{REPORTS_PREFIX}/{report_id}/final.md"
+            final_key = f"{self._report_prefix(report_id)}final.md"
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
                 Key=final_key,
@@ -242,9 +243,17 @@ class S3ReportWriterTool(BaseCustomTool):
             logger.error(f"Unexpected error listing report sections: {str(e)}")
             return self._create_error_result(tool_use_id, f"Unexpected error listing report sections: {str(e)}")
 
+    def _report_prefix(self, report_id: str) -> str:
+        """
+        S3 prefix for a report, namespaced by the current conversation so that the
+        same report_id used in different conversations never mixes sections.
+        """
+        scope = InvocationContext.get_conversation_scope()
+        return f"{self.use_case_uuid}/{REPORTS_PREFIX}/{scope}/{report_id}/"
+
     def _list_section_keys(self, report_id: str) -> List[str]:
         """List section object keys for a report, ordered by section number prefix."""
-        prefix = f"{self.use_case_uuid}/{REPORTS_PREFIX}/{report_id}/"
+        prefix = self._report_prefix(report_id)
         keys: List[str] = []
         paginator = self.s3_client.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):

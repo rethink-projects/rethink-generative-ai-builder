@@ -37,6 +37,7 @@ from gaab_strands_common import (
 )
 from gaab_strands_common.multimodal.multimodal_processor import MultimodalRequestProcessor
 from gaab_strands_common.utils.helpers import extract_user_message
+from gaab_strands_common.utils.invocation_context import InvocationContext
 
 
 # Suppress OpenTelemetry context warnings
@@ -121,6 +122,9 @@ def invoke(payload: Dict[str, Any]):
         actor_id = payload.get("userId")
         logger.info(f"Session ID: {session_id}")
         logger.info(f"Actor ID: {actor_id}")
+
+        # Expose the conversation id to tools that scope resources per conversation
+        InvocationContext.set_conversation_id(session_id)
 
         # Get agent instance with session context
         agent_instance = get_agent_instance(session_id=session_id, actor_id=actor_id)

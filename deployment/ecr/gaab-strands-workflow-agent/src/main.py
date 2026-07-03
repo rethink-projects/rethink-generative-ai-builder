@@ -27,6 +27,7 @@ from gaab_strands_common import (
 )
 from gaab_strands_common.multimodal.multimodal_processor import MultimodalRequestProcessor
 from gaab_strands_common.utils.helpers import extract_user_message
+from gaab_strands_common.utils.invocation_context import InvocationContext
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -173,6 +174,7 @@ def invoke(payload: Dict[str, Any]):
     try:
         # Extract session ID and actor ID for memory context
         session_id = payload.get("conversationId")
+        InvocationContext.set_conversation_id(session_id)
         actor_id = payload.get("userId")
         logger.info(f"Session ID: {session_id}")
         logger.info(f"Actor ID: {actor_id}")
