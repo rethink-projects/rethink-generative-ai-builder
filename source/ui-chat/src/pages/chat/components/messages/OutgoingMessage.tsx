@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { OutgoingMessageProps } from './types';
 import { ChatBubble } from '@cloudscape-design/chat-components';
 import { ChatBubbleAvatar } from '../../../../components/common/common-components';
-import MarkdownContent from '../../../../components/markdown/MarkdownContent';
 import { FileDisplay } from '../../../../components/multimodal/FileDisplay';
 import '../../styles/OutgoingMessage.scss';
 
@@ -50,8 +49,10 @@ export const OutgoingMessage = ({
                     maxHeight: isExpanded ? 'none' : `${previewHeight}px`
                 }}
             >
-                <div ref={contentRef}>
-                    <MarkdownContent content={content} />
+                {/* User input is shown literally (not as Markdown) so line breaks
+                    and spacing are preserved exactly as typed */}
+                <div ref={contentRef} className="outgoing-message__plain-text">
+                    {content}
                 </div>
 
                 {isOverflowing && !isExpanded && (

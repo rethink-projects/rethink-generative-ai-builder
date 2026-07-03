@@ -8,6 +8,11 @@
         transition: max-height 0.3s ease-out;
     }
 
+    &__plain-text {
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+    }
+
     &__gradient-overlay {
         position: absolute;
         bottom: 0;

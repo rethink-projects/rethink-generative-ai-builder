@@ -101,6 +101,19 @@ describe('OutgoingMessage', () => {
         expect(contentSlot?.getElement()).toHaveTextContent(String(mockMessage.content));
     });
 
+    it('preserves user line breaks by rendering plain text with pre-wrap', () => {
+        const multilineMessage = {
+            ...mockMessage,
+            content: 'Linha 1\nLinha 2\n\nParágrafo novo'
+        };
+        const { container } = render(<OutgoingMessage {...mockProps} message={multilineMessage} />);
+
+        const plainText = container.querySelector('.outgoing-message__plain-text');
+        expect(plainText).toBeTruthy();
+        // texto literal, com as quebras intactas (não processado como Markdown)
+        expect(plainText?.textContent).toBe('Linha 1\nLinha 2\n\nParágrafo novo');
+    });
+
     it('renders avatar when provided', () => {
         const { container } = render(<OutgoingMessage {...mockProps} />);
         const wrapper = createWrapper(container);
