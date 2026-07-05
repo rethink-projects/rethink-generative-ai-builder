@@ -4,6 +4,7 @@
 import { defineConfig, UserConfig } from 'vite';
 import { UserConfig as VitestUserConfig } from 'vitest/node';
 import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
 // Respect WORKERS_PER_SUITE env var to limit vitest fork parallelism in CI.
@@ -56,7 +57,7 @@ const config: VitestUserConfig & UserConfig = {
             }
         })
     },
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     resolve: {
         alias: {
             '@': resolve(__dirname, './src'),

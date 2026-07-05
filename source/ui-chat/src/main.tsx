@@ -3,6 +3,7 @@
 
 import ReactDOM from 'react-dom/client';
 import { Amplify, ResourcesConfig } from 'aws-amplify';
+import './theme.css';
 import './styles.css';
 import './i18n/i18n';
 import { Provider } from 'react-redux';
