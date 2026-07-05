@@ -51,4 +51,17 @@ beforeAll(() => {
     server.listen({ onUnhandledRequest: 'error' });
 });
 afterAll(() => server.close());
-afterEach(() => server.resetHandlers());
+afterEach(async () => {
+    server.resetHandlers();
+
+    // Zustand stores are module-level singletons: reset them between tests
+    const { useChatStore } = await import('./stores/chat-store');
+    const { useConfigStore } = await import('./stores/config-store');
+    const { usePreferencesStore } = await import('./stores/preferences-store');
+    const { useNotificationsStore } = await import('./stores/notifications-store');
+    useChatStore.setState(useChatStore.getInitialState(), true);
+    useConfigStore.setState(useConfigStore.getInitialState(), true);
+    usePreferencesStore.setState(usePreferencesStore.getInitialState(), true);
+    useNotificationsStore.setState(useNotificationsStore.getInitialState(), true);
+    localStorage.clear();
+});

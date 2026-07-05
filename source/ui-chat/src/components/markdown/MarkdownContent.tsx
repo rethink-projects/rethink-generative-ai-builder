@@ -5,28 +5,40 @@ import React, { memo, useState } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-
-import CodeView from '@cloudscape-design/code-view/code-view';
-import { CopyToClipboard } from '@cloudscape-design/components';
-
-import typescriptHighlight from '@cloudscape-design/code-view/highlight/typescript';
-import javascriptHighlight from '@cloudscape-design/code-view/highlight/javascript';
-import pythonHighlight from '@cloudscape-design/code-view/highlight/python';
-import javaHighlight from '@cloudscape-design/code-view/highlight/java';
-import { ExternalLinkWarningModal } from '../common/common-components';
+import { Check, Copy } from 'lucide-react';
 import './MarkdownContent.scss';
 
 /**
- * Map of language identifiers to their corresponding syntax highlighting functions
- * Defaults to typescript highlighting if language isn't found
+ * Fenced code block with a copy-to-clipboard action.
  */
-const highlightMap: Record<string, (code: string) => React.ReactNode> = {
-    typescript: typescriptHighlight,
-    javascript: javascriptHighlight,
-    python: pythonHighlight,
-    java: javaHighlight,
-    // Default to typescript if language isn't found
-    default: typescriptHighlight
+const CodeBlock = ({ code }: { code: string }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            console.error('Failed to copy code:', error);
+        }
+    };
+
+    return (
+        <div className="markdown-code-block group relative" data-testid="code-block">
+            <button
+                type="button"
+                aria-label={copied ? 'Code copied' : 'Copy code'}
+                onClick={handleCopy}
+                className="absolute right-2 top-2 rounded-md border bg-background/80 p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+            >
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            </button>
+            <pre className="overflow-x-auto rounded-md border bg-muted p-3 text-xs leading-relaxed">
+                <code>{code}</code>
+            </pre>
+        </div>
+    );
 };
 
 /**
@@ -34,51 +46,20 @@ const highlightMap: Record<string, (code: string) => React.ReactNode> = {
  */
 const MARKDOWN_COMPONENTS: Components = {
     /**
-     * Renders code blocks and inline code
-     * Supports syntax highlighting for typescript, javascript, python and java
-     * Includes copy to clipboard functionality for code blocks
+     * Renders code blocks (with copy action) and inline code
      */
-    code: ({ className, children }) => {
-        const match = /language-(\w+)/.exec(className || '');
-        const language = match ? match[1].toLowerCase() : 'typescript';
-
+    code: ({ children }) => {
         // remove trailing new line char
         const code = String(children).replace(/\n$/, '');
 
-        // Check if remaining code contains multiple lines
         const hasMultipleLines = code.includes('\n');
         if (!hasMultipleLines) return <code data-testid="inline-code">{children}</code>;
 
-        return (
-            <div className="markdown-code-block">
-                <CodeView
-                    data-testid="code-block"
-                    content={code}
-                    highlight={highlightMap[language] || highlightMap.default}
-                    lineNumbers={hasMultipleLines}
-                    wrapLines={true}
-                    actions={
-                        <CopyToClipboard
-                            copyButtonAriaLabel="Copy code"
-                            copyErrorText="Code failed to copy"
-                            copySuccessText="Code copied"
-                            textToCopy={code}
-                        />
-                    }
-                />
-            </div>
-        );
+        return <CodeBlock code={code} />;
     },
-    /**
-     * Renders paragraph elements
-     */
     p({ children }) {
-        // Otherwise, render as normal paragraph
         return <p>{children}</p>;
     },
-    /**
-     * Renders table elements with custom container and styling
-     */
     table({ children }) {
         return (
             <div className="markdown-table-container">
@@ -86,23 +67,30 @@ const MARKDOWN_COMPONENTS: Components = {
             </div>
         );
     },
-    /**
-     * Renders table header cells with custom styling
-     */
     th({ children }) {
         return <th className="markdown-th">{children}</th>;
     },
-    /**
-     * Renders table data cells with custom styling
-     */
     td({ children }) {
         return <td className="markdown-td">{children}</td>;
+    },
+    /**
+     * External links open in a new tab with safe rel attributes
+     */
+    a({ href, children, ...props }) {
+        const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'));
+        return (
+            <a
+                href={href}
+                {...(isExternal && { target: '_blank', rel: 'noopener noreferrer' })}
+                className="text-primary underline underline-offset-2"
+                {...props}
+            >
+                {children}
+            </a>
+        );
     }
 };
 
-/**
- * Props interface for MarkdownContent component
- */
 interface MarkdownContentProps {
     content: string;
 }
@@ -118,65 +106,13 @@ const stripThinkingTags = (text: string): string => {
  * Memoized to prevent unnecessary re-renders
  */
 const MarkdownContent = memo(({ content }: MarkdownContentProps) => {
-    const [showExternalLinkModal, setShowExternalLinkModal] = useState(false);
-    const [pendingExternalLink, setPendingExternalLink] = useState('');
-
-    const handleExternalLinkClick = (href: string) => {
-        setPendingExternalLink(href);
-        setShowExternalLinkModal(true);
-    };
-
-    const handleModalDiscard = () => {
-        setShowExternalLinkModal(false);
-        setPendingExternalLink('');
-    };
-
-    // Strip thinking tags from content before rendering
     const cleanedContent = stripThinkingTags(content);
-
-    // Create components with access to modal state
-    const markdownComponents: Components = {
-        ...MARKDOWN_COMPONENTS,
-        /**
-         * Renders links with external link warning modal
-         */
-        a({ href, children, ...props }) {
-            const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'));
-
-            if (isExternal) {
-                return (
-                    <a
-                        href="#"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            handleExternalLinkClick(href);
-                        }}
-                        {...props}
-                    >
-                        {children}
-                    </a>
-                );
-            }
-
-            return (
-                <a href={href} {...props}>
-                    {children}
-                </a>
-            );
-        }
-    };
 
     return (
         <div className="markdown-content">
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={markdownComponents}>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} components={MARKDOWN_COMPONENTS}>
                 {cleanedContent}
             </ReactMarkdown>
-            <ExternalLinkWarningModal
-                visible={showExternalLinkModal}
-                onDiscard={handleModalDiscard}
-                externalLink={pendingExternalLink}
-                resourceType="external link"
-            />
         </div>
     );
 });

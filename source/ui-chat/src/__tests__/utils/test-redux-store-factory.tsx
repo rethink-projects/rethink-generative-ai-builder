@@ -1,37 +1,55 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Provider } from 'react-redux';
+/**
+ * Test-state factories. Historically these seeded a Redux store; the app now
+ * uses Zustand stores + TanStack Query, so the factories keep their public API
+ * (createState/renderWithStore/renderHookWithStore and the per-slice
+ * factories) but write into the Zustand stores and wrap renders in a
+ * QueryClientProvider.
+ */
 
 import { render, renderHook } from '@testing-library/react';
 import { PropsWithChildren } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { ConfigState } from '../../store/configSlice';
-import { PreferencesState } from '../../store/preferencesSlice';
-import { NotificationState } from '../../store/notificationsSlice';
-import { RootState, setupStore } from '../../store/store';
+import { useConfigStore } from '../../stores/config-store';
+import { usePreferencesStore } from '../../stores/preferences-store';
+import { useNotificationsStore, NotificationPayload } from '../../stores/notifications-store';
 
 import { DEFAULT_AGENT_CONFIG, DEFAULT_TEXT_CONFIG } from './test-configs';
 import { RuntimeConfig } from '../../models';
 
-/**
- * Utility type that makes all properties in an object type optional recursively
- * @template T - The type to make deeply partial
- * @example
- * interface User {
- *   name: string;
- *   address: {
- *     street: string;
- *     city: string;
- *   }
- * }
- *
- * // Results in type where all properties are optional:
- * type PartialUser = DeepPartial<User>;
- */
 type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
+
+/** Legacy slice-shaped state, still used by tests via createState overrides */
+export interface ConfigState {
+    runtimeConfig: RuntimeConfig | null;
+    loading?: boolean;
+    error?: string | null;
+}
+
+export interface PreferencesState {
+    sidebarOpen?: boolean;
+    darkMode?: boolean;
+    promptTemplate?: string;
+    // legacy fields kept so old overrides don't break type-wise
+    navigationSideBarOpen?: boolean;
+    settingsPanelOpen?: boolean;
+    settingsPanelPosition?: 'side' | 'bottom';
+}
+
+export interface NotificationState {
+    notifications: NotificationPayload[];
+}
+
+export interface RootState {
+    config: ConfigState;
+    preferences: PreferencesState;
+    notifications: NotificationState;
+}
 
 // Base factory interface
 interface MockStateFactory<T> {
@@ -88,9 +106,7 @@ export class ConfigStateFactory implements MockStateFactory<ConfigState> {
 // Preferences State Factory
 export class PreferencesStateFactory implements MockStateFactory<PreferencesState> {
     private defaultState: PreferencesState = {
-        navigationSideBarOpen: true,
-        settingsPanelOpen: false,
-        settingsPanelPosition: 'side',
+        sidebarOpen: true,
         darkMode: false,
         promptTemplate: ''
     };
@@ -124,6 +140,32 @@ export class NotificationsStateFactory implements MockStateFactory<NotificationS
     }
 }
 
+/** Applies a slice-shaped state object onto the Zustand stores */
+export const applyStateToStores = (state: Partial<RootState>) => {
+    if (state.config?.runtimeConfig !== undefined) {
+        useConfigStore.setState({ runtimeConfig: state.config.runtimeConfig });
+    }
+    if (state.preferences) {
+        usePreferencesStore.setState({
+            ...(state.preferences.sidebarOpen !== undefined && { sidebarOpen: state.preferences.sidebarOpen }),
+            ...(state.preferences.darkMode !== undefined && { darkMode: state.preferences.darkMode }),
+            ...(state.preferences.promptTemplate !== undefined && {
+                promptTemplate: state.preferences.promptTemplate
+            })
+        });
+    }
+    if (state.notifications) {
+        useNotificationsStore.setState({ notifications: state.notifications.notifications });
+    }
+};
+
+export const createTestQueryClient = () =>
+    new QueryClient({
+        defaultOptions: {
+            queries: { retry: false, refetchOnWindowFocus: false }
+        }
+    });
+
 // Store Factory that combines all slice factories
 export class TestStoreFactory {
     private configFactory: ConfigStateFactory;
@@ -145,14 +187,26 @@ export class TestStoreFactory {
         };
     }
 
+    /** Seeds the Zustand stores and returns accessors mimicking the old store API */
     createStore(overrides: Partial<RootState> = {}) {
-        return setupStore(this.createState(overrides));
+        const state = this.createState(overrides);
+        applyStateToStores(state);
+        return {
+            getState: (): RootState => ({
+                config: { runtimeConfig: useConfigStore.getState().runtimeConfig },
+                preferences: usePreferencesStore.getState(),
+                notifications: { notifications: useNotificationsStore.getState().notifications }
+            })
+        };
     }
 
     renderWithStore<T extends React.ReactElement>(ui: T, stateOverrides: DeepPartial<RootState> = {}) {
-        const store = this.createStore(stateOverrides as RootState);
+        const store = this.createStore(stateOverrides as Partial<RootState>);
+        const queryClient = createTestQueryClient();
 
-        const Wrapper = ({ children }: PropsWithChildren<{}>) => <Provider store={store}>{children}</Provider>;
+        const Wrapper = ({ children }: PropsWithChildren<{}>) => (
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        );
 
         return {
             store,
@@ -162,8 +216,11 @@ export class TestStoreFactory {
 
     renderHookWithStore(hook: any, stateOverrides: Partial<RootState> = {}) {
         const store = this.createStore(stateOverrides);
+        const queryClient = createTestQueryClient();
 
-        const wrapper = ({ children }: PropsWithChildren<{}>) => <Provider store={store}>{children}</Provider>;
+        const wrapper = ({ children }: PropsWithChildren<{}>) => (
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        );
 
         return {
             store,

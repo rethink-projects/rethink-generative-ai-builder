@@ -14,6 +14,7 @@ import I18nextBrowserLanguageDetector from 'i18next-browser-languagedetector';
 import enTranslations from './locales/en.json';
 import esTranslations from './locales/es.json';
 import frTranslations from './locales/fr.json';
+import ptTranslations from './locales/pt.json';
 
 /**
  * Initialize i18next with:
@@ -29,10 +30,13 @@ i18n.use(I18nextBrowserLanguageDetector)
         resources: {
             en: { translation: enTranslations },
             es: { translation: esTranslations },
-            fr: { translation: frTranslations }
+            fr: { translation: frTranslations },
+            pt: { translation: ptTranslations }
         },
-        lng: 'en', // default language
+        // no fixed lng: the browser language detector picks the user's language
         fallbackLng: 'en',
+        supportedLngs: ['en', 'es', 'fr', 'pt'],
+        nonExplicitSupportedLngs: true,
         interpolation: {
             escapeValue: false
         }

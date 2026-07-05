@@ -4,8 +4,7 @@
 import { useCallback, useEffect } from 'react';
 import { fetchAuthSession, Hub } from '@aws-amplify/core';
 import { signOut, signInWithRedirect } from '@aws-amplify/auth';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { useConfigStore } from '../stores/config-store';
 
 /**
  * Interface defining the return type of the useAuthEventHandler hook
@@ -29,7 +28,7 @@ export const useAuthEventHandler = (
     checkUser: () => Promise<void>,
     resetUserState: () => void
 ): UseAuthEventHandlerReturn => {
-    const runtimeConfig = useSelector((state: RootState) => state.config.runtimeConfig);
+    const runtimeConfig = useConfigStore((state) => state.runtimeConfig);
     const userPoolClientId = runtimeConfig?.UserPoolClientId;
 
     /**

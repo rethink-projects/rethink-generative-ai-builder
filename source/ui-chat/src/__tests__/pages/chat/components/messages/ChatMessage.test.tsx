@@ -3,8 +3,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 import { ChatMessage } from '@/pages/chat/components';
 import { AUTHORS } from '@/pages/chat/config';
 import { ChatBubbleMessage } from '@/pages/chat/types';
@@ -29,15 +27,6 @@ describe('ChatMessage', () => {
     };
 
     // Mock Redux store
-    const mockStore = configureStore({
-        reducer: {
-            config: (state = { useCaseId: 'test-use-case' }) => state
-        },
-        middleware: (getDefaultMiddleware) =>
-            getDefaultMiddleware({
-                serializableCheck: false
-            })
-    });
 
     // Mock the useFeedback hook to avoid Redux dependency issues
     beforeEach(() => {
@@ -59,9 +48,8 @@ describe('ChatMessage', () => {
         vi.clearAllMocks();
     });
 
-    // Helper function to render with Redux Provider
     const renderWithProvider = (ui: React.ReactElement) => {
-        return render(<Provider store={mockStore}>{ui}</Provider>);
+        return render(ui);
     };
 
     describe('Component Selection', () => {

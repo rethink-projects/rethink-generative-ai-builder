@@ -5,12 +5,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ReactDOM from 'react-dom/client';
 import { Amplify } from 'aws-amplify';
 
-const setupStoreSpy = vi.fn(() => ({
-    dispatch: vi.fn()
-}));
-
-const setRuntimeConfigSpy = vi.fn();
-
 // Mock dependencies
 vi.mock('react-dom/client', () => {
     const createRootMock = vi.fn(() => ({ render: vi.fn() }));
@@ -26,13 +20,6 @@ vi.mock('aws-amplify', () => ({
     Amplify: { configure: vi.fn() }
 }));
 
-vi.mock('@store/store', () => ({
-    setupStore: setupStoreSpy
-}));
-
-vi.mock('@store/configSlice', () => ({
-    setRuntimeConfig: setRuntimeConfigSpy
-}));
 
 describe('main.tsx', () => {
     const mockRuntimeConfig = {
@@ -63,13 +50,14 @@ describe('main.tsx', () => {
 
         // Import the module to trigger the initialization
         await import('../main');
+        // The store must come from the same (reset) module registry as main
+        const { useConfigStore } = await import('../stores/config-store');
 
         // Wait for promises to resolve
         await vi.waitFor(() => {
             expect(global.fetch).toHaveBeenCalledWith('/runtimeConfig.json');
             expect(Amplify.configure).toHaveBeenCalled();
-            expect(setupStoreSpy).toHaveBeenCalled();
-            expect(setRuntimeConfigSpy).toHaveBeenCalledWith(mockRuntimeConfig);
+            expect(useConfigStore.getState().runtimeConfig).toEqual(mockRuntimeConfig);
             expect(ReactDOM.createRoot).toHaveBeenCalled();
         });
     }, 60000);
@@ -90,7 +78,6 @@ describe('main.tsx', () => {
             expect(consoleLogSpy).toHaveBeenCalled();
             // App should still initialize with empty config
             expect(Amplify.configure).toHaveBeenCalled();
-            expect(setupStoreSpy).toHaveBeenCalled();
         });
     }, 60000);
 });

@@ -10,7 +10,7 @@ import {
 } from '../types/file-upload';
 import { isNonRetryableUploadError } from '../utils/file-upload';
 import { v4 as uuidv4 } from 'uuid';
-import { ApiEndpoints } from '../store/solutionApi';
+import { ApiEndpoints } from '../hooks/queries';
 import { API } from '../utils/API.adapter';
 
 interface FileUploadParams {

@@ -3,23 +3,23 @@
 
 import '@aws-amplify/ui-react/styles.css';
 import { AppRoutes } from './AppRoutes.tsx';
-import { useSelector } from 'react-redux';
 
 import { useEffect } from 'react';
-import { RootState } from './store/store.ts';
 import { SOLUTION_NAME } from './utils/constants.ts';
+import { useConfigStore } from './stores/config-store.ts';
+import { usePreferencesStore, applyThemeClass } from './stores/preferences-store.ts';
 
 const AppComponent = () => {
-    // Access the config from Redux store
-    const config = useSelector((state: RootState) => state.config);
+    const useCaseName = useConfigStore((state) => state.runtimeConfig?.UseCaseConfig?.UseCaseName);
+    const darkMode = usePreferencesStore((state) => state.darkMode);
 
     useEffect(() => {
-        if (config.runtimeConfig?.UseCaseConfig?.UseCaseName) {
-            document.title = config.runtimeConfig.UseCaseConfig.UseCaseName;
-        } else {
-            document.title = SOLUTION_NAME;
-        }
-    }, [config.runtimeConfig?.UseCaseConfig?.UseCaseName]); // Re-run when use case name changes
+        document.title = useCaseName || SOLUTION_NAME;
+    }, [useCaseName]);
+
+    useEffect(() => {
+        applyThemeClass(darkMode);
+    }, [darkMode]);
 
     return <AppRoutes></AppRoutes>;
 };

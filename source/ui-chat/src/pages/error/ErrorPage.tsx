@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Container, ContentLayout, Header, SpaceBetween, Box, Button } from '@cloudscape-design/components';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface ErrorPageProps {
     title?: string;
@@ -10,39 +10,24 @@ interface ErrorPageProps {
     hideTitle?: boolean;
 }
 
-const ErrorPage = ({ title = 'Error', message = 'Page not found 😿', hideTitle = false }: ErrorPageProps) => {
+const ErrorPage = ({ title = 'Error', message = 'Page not found', hideTitle = false }: ErrorPageProps) => {
     const navigate = useNavigate();
     return (
-        <ContentLayout
-            header={
-                !hideTitle ? (
-                    <SpaceBetween size="m">
-                        <Header variant="h1">{title}</Header>
-                    </SpaceBetween>
-                ) : undefined
-            }
-            defaultPadding
-            headerVariant={!hideTitle ? 'high-contrast' : 'default'}
-            maxContentWidth={800}
-            data-testid="error-page-content-layout"
-        >
-            <Container data-testid="error-page-container">
-                <Box textAlign="center" padding={{ vertical: 'xxl' }}>
-                    <SpaceBetween size="l">
-                        <Box variant="h2" data-testid="error-page-message">
-                            {message}
-                        </Box>
-                        <Button
-                            onClick={() => navigate('/app/chat')}
-                            variant="primary"
-                            data-testid="error-page-return-button"
-                        >
-                            Return to Chat
-                        </Button>
-                    </SpaceBetween>
-                </Box>
-            </Container>
-        </ContentLayout>
+        <div className="flex h-full items-center justify-center px-4" data-testid="error-page-content-layout">
+            <div className="w-full max-w-md rounded-xl border bg-card p-8 text-center shadow-sm" data-testid="error-page-container">
+                {!hideTitle && <h1 className="text-xl font-semibold">{title}</h1>}
+                <p className="mt-3 text-sm text-muted-foreground" data-testid="error-page-message">
+                    {message}
+                </p>
+                <Button
+                    onClick={() => navigate('/app/chat')}
+                    className="mt-6"
+                    data-testid="error-page-return-button"
+                >
+                    Return to Chat
+                </Button>
+            </div>
+        </div>
     );
 };
 

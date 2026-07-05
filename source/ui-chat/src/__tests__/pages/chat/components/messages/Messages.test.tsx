@@ -3,14 +3,11 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 
 import Messages from '../../../../../pages/chat/components/messages/Messages';
 import { Message } from '../../../../../pages/chat/types';
 import { SourceDocument } from '../../../../../models';
 import { createTestWrapper } from '../../../../utils/test-utils';
-import createWrapper from '@cloudscape-design/components/test-utils/dom';
 import {
     createAlertMessage,
     createChatBubbleMessage,
@@ -23,15 +20,6 @@ describe('Messages', () => {
     const mockUserName = 'Test User';
 
     // Mock Redux store
-    const mockStore = configureStore({
-        reducer: {
-            config: (state = { useCaseId: 'test-use-case' }) => state
-        },
-        middleware: (getDefaultMiddleware) => 
-            getDefaultMiddleware({
-                serializableCheck: false
-            })
-    });
 
     // Mock the useFeedback hook to avoid Redux dependency issues
     vi.mock('../../../../../hooks/use-feedback', () => ({
@@ -54,11 +42,9 @@ describe('Messages', () => {
         });
 
         return render(
-            <Provider store={mockStore}>
                 <Wrapper>
                     <Messages messages={messages} conversationId='fake-id' />
                 </Wrapper>
-            </Provider>
         );
     };
 
@@ -98,11 +84,9 @@ describe('Messages', () => {
         ];
 
         const { container } = renderWithWrapper(messages);
-        const wrapper = createWrapper(container);
-
-        const alert = wrapper.findAlert();
-        expect(alert?.getElement()).toHaveAttribute('data-testid', 'error-alert0');
-        expect(alert?.getElement().textContent).toContain(errorMessage.trim());
+        const alert = screen.getByTestId('error-alert0');
+        expect(alert).toBeInTheDocument();
+        expect(alert.textContent).toContain(errorMessage.trim());
     });
 
     it('renders multiple error alerts', () => {
@@ -118,13 +102,8 @@ describe('Messages', () => {
         ];
 
         const { container } = renderWithWrapper(messages);
-        const wrapper = createWrapper(container);
-
-        const alerts = wrapper.findAllAlerts();
-        expect(alerts).toHaveLength(2);
-
-        expect(alerts[0].getElement()).toHaveAttribute('data-testid', 'error-alert0');
-        expect(alerts[1].getElement()).toHaveAttribute('data-testid', 'error-alert1');
+        expect(screen.getByTestId('error-alert0')).toBeInTheDocument();
+        expect(screen.getByTestId('error-alert1')).toBeInTheDocument();
     });
 
     it('renders live region with latest message', () => {
@@ -138,8 +117,7 @@ describe('Messages', () => {
             })
         ];
 
-        const { container } = renderWithWrapper(messages);
-        const wrapper = createWrapper(container);
+        renderWithWrapper(messages);
 
         const liveRegion = screen.getByTestId('live-region');
         expect(liveRegion).toBeInTheDocument();
@@ -158,8 +136,7 @@ describe('Messages', () => {
             })
         ];
 
-        const { container } = renderWithWrapper(messages);
-        const wrapper = createWrapper(container);
+        renderWithWrapper(messages);
 
         expect(screen.getByTestId('outgoing-chat-message-0')).toBeInTheDocument();
         expect(screen.getByTestId('error-alert1')).toBeInTheDocument();

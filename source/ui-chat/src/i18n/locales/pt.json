@@ -1,0 +1,91 @@
+{
+  "sidenav": {
+    "chatOption": "Chat",
+    "header": "Chat"
+  },
+  "sidebar": {
+    "newConversation": "Nova conversa",
+    "recentConversations": "Conversas recentes",
+    "emptyConversations": "Suas conversas aparecerão aqui.",
+    "conversationsUnavailable": "O histórico não está disponível para este assistente.",
+    "loadingConversations": "Carregando conversas...",
+    "openSidebar": "Abrir menu lateral",
+    "closeSidebar": "Fechar menu lateral"
+  },
+  "header": {
+    "settings": "Configurações",
+    "darkMode": "Mudar para tema escuro",
+    "lightMode": "Mudar para tema claro",
+    "signOut": "Sair",
+    "userMenu": "Menu do usuário"
+  },
+  "welcome": {
+    "title": "Olá! Como posso ajudar você hoje?",
+    "subtitle": "Pergunte o que quiser: vou responder usando o conhecimento configurado para este assistente.",
+    "suggestionsLabel": "Sugestões para começar",
+    "suggestion1": "Com o que você pode me ajudar?",
+    "suggestion2": "Resuma os pontos principais de um assunto para mim",
+    "suggestion3": "Explique um conceito em palavras simples",
+    "suggestion4": "Me ajude a redigir uma mensagem curta"
+  },
+  "composer": {
+    "placeholder": "Faça uma pergunta...",
+    "send": "Enviar mensagem",
+    "generating": "Gerando resposta...",
+    "charactersRemaining": "{{count}} caracteres restantes",
+    "overLimit": "A mensagem excede o limite em {{count}} caracteres",
+    "attachFiles": "Anexar arquivos",
+    "removeFile": "Remover arquivo {{fileName}}"
+  },
+  "messages": {
+    "assistantName": "Assistente",
+    "you": "Você",
+    "copy": "Copiar",
+    "copied": "Mensagem copiada",
+    "helpful": "Útil",
+    "notHelpful": "Não foi útil",
+    "feedbackThanks": "Obrigado pelo seu feedback!",
+    "showMore": "Mostrar mais",
+    "showLess": "Mostrar menos",
+    "sources": "Fontes",
+    "responseComplete": "Resposta concluída",
+    "thinking": "Pensando...",
+    "toolsUsed": "Ferramentas usadas"
+  },
+  "feedbackForm": {
+    "title": "Conte mais para nós",
+    "commentLabel": "Comentários adicionais (opcional)",
+    "reasonsLabel": "Qual foi o problema?",
+    "submit": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "settings": {
+    "title": "Configurações",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "language": "Idioma",
+    "advanced": "Avançado: prompt do sistema",
+    "advancedDescription": "O prompt do sistema orienta como o assistente responde. Só altere se souber o que está fazendo.",
+    "promptTemplateLabel": "Prompt do sistema",
+    "reset": "Restaurar padrão",
+    "save": "Salvar",
+    "promptSaved": "Prompt do sistema salvo"
+  },
+  "connection": {
+    "connecting": "Conectando...",
+    "reconnecting": "Conexão perdida. Tentando reconectar...",
+    "failed": "Não foi possível conectar. Verifique sua rede e recarregue a página."
+  },
+  "loading": {
+    "fetchingConfig": "Carregando assistente...",
+    "error": "Algo deu errado ao carregar. Recarregue a página."
+  },
+  "errors": {
+    "pageNotFound": "Página não encontrada",
+    "pageNotFoundMessage": "A página que você procura não existe."
+  },
+  "common": {
+    "skipToContent": "Pular para o conteúdo principal"
+  }
+}

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FEEDBACK_HELPFUL, FEEDBACK_NOT_HELPFUL, MAX_FEEDBACK_INPUT_LENGTH } from '@/utils';
-import { Button, Checkbox, FormField, Input, SpaceBetween } from '@cloudscape-design/components';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 export type FeedbackType = 'helpful' | 'not-helpful' | '';
 
@@ -28,7 +29,12 @@ const FEEDBACK_REASONS = [
     { label: 'Other', value: 'Other' }
 ];
 
+/**
+ * Inline feedback form shown under an assistant message after the user clicks
+ * thumbs up/down. Keeps the original validation rules (length + charset).
+ */
 export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, onCancel, feedbackType, isLoading = false }) => {
+    const { t } = useTranslation();
     const [feedbackData, setFeedbackData] = useState<FeedbackFormData>({
         comment: '',
         reasons: []
@@ -45,7 +51,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, onCancel, 
     }, [feedbackType]);
 
     const validateFeedbackCommentInput = (feedbackComment: string) => {
-        // Check length constraints
         if (feedbackComment.length > MAX_FEEDBACK_INPUT_LENGTH) {
             return {
                 isValid: false,
@@ -53,7 +58,6 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, onCancel, 
             };
         }
 
-        // Check for invalid characters
         const validCharsRegex = /^[a-zA-Z0-9 .,!?-]*$/;
         if (!validCharsRegex.test(feedbackComment)) {
             return {
@@ -66,66 +70,80 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({ onSubmit, onCancel, 
     };
 
     const handleFeedbackCommentChange = (value: string) => {
-        // Set the raw input value in state
         setFeedbackData((prev) => ({ ...prev, comment: value }));
-
-        // Validate the input
         const { error } = validateFeedbackCommentInput(value);
         setFeedbackCommentError(error);
     };
 
     return (
-        <SpaceBetween size="m" data-testid="feedback-form">
-            <FormField
-                label="Comment - optional"
-                errorText={feedbackCommentError}
-                data-testid="feedback-form-comment-field"
-            >
-                <Input
+        <div className="mt-2 space-y-3 rounded-md border bg-muted/40 p-3 text-sm" data-testid="feedback-form">
+            <div data-testid="feedback-form-comment-field">
+                <label className="mb-1 block text-xs font-medium" htmlFor="feedback-comment">
+                    {t('feedbackForm.commentLabel')}
+                </label>
+                <input
+                    id="feedback-comment"
+                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     value={feedbackData.comment}
-                    onChange={({ detail }) => handleFeedbackCommentChange(detail.value)}
+                    onChange={(event) => handleFeedbackCommentChange(event.target.value)}
                     placeholder={`Tell us why this response was ${feedbackType}...`}
-                    data-testid="feedback-form-comment-input"
                     autoComplete="off"
+                    aria-invalid={!!feedbackCommentError}
+                    data-testid="feedback-form-comment-input"
                 />
-            </FormField>
+                {feedbackCommentError && (
+                    <p role="alert" className="mt-1 text-xs text-destructive">
+                        {feedbackCommentError}
+                    </p>
+                )}
+            </div>
 
             {feedbackType === FEEDBACK_NOT_HELPFUL && (
-                <FormField label="Feedback reasons - optional" data-testid="feedback-form-reasons-field">
-                    {FEEDBACK_REASONS.map((reason) => (
-                        <Checkbox
-                            key={reason.value}
-                            checked={feedbackData.reasons.includes(reason.value)}
-                            onChange={({ detail }) => {
-                                setFeedbackData((prev) => ({
-                                    ...prev,
-                                    reasons: detail.checked
-                                        ? [...prev.reasons, reason.value]
-                                        : prev.reasons.filter((r) => r !== reason.value)
-                                }));
-                            }}
-                            data-testid={`feedback-form-reason-checkbox-${reason.value}`}
-                        >
-                            {reason.label}
-                        </Checkbox>
-                    ))}
-                </FormField>
+                <fieldset data-testid="feedback-form-reasons-field">
+                    <legend className="mb-1 text-xs font-medium">{t('feedbackForm.reasonsLabel')}</legend>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {FEEDBACK_REASONS.map((reason) => (
+                            <label key={reason.value} className="flex items-center gap-1.5 text-sm">
+                                <input
+                                    type="checkbox"
+                                    className="size-4 accent-[var(--primary)]"
+                                    checked={feedbackData.reasons.includes(reason.value)}
+                                    onChange={(event) => {
+                                        setFeedbackData((prev) => ({
+                                            ...prev,
+                                            reasons: event.target.checked
+                                                ? [...prev.reasons, reason.value]
+                                                : prev.reasons.filter((r) => r !== reason.value)
+                                        }));
+                                    }}
+                                    data-testid={`feedback-form-reason-checkbox-${reason.value}`}
+                                />
+                                {reason.label}
+                            </label>
+                        ))}
+                    </div>
+                </fieldset>
             )}
 
-            <SpaceBetween direction="horizontal" size="xs" data-testid="feedback-form-buttons">
-                <Button onClick={onCancel} disabled={isLoading} data-testid="feedback-form-cancel-button">
-                    Cancel
+            <div className="flex justify-end gap-2" data-testid="feedback-form-buttons">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onCancel}
+                    disabled={isLoading}
+                    data-testid="feedback-form-cancel-button"
+                >
+                    {t('feedbackForm.cancel')}
                 </Button>
                 <Button
-                    variant="primary"
+                    size="sm"
                     onClick={() => onSubmit(feedbackData)}
-                    loading={isLoading}
                     disabled={isLoading || !!feedbackCommentError}
                     data-testid="feedback-form-submit-button"
                 >
-                    Submit feedback
+                    {t('feedbackForm.submit')}
                 </Button>
-            </SpaceBetween>
-        </SpaceBetween>
+            </div>
+        </div>
     );
 };

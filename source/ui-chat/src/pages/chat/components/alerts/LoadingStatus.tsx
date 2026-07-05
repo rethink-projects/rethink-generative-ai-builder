@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { addNotification, deleteNotification } from '@/store/notificationsSlice';
+import { useNotificationsStore } from '@/stores/notifications-store';
 
 /**
  * Enum representing different types of loading errors that can occur
@@ -55,15 +54,15 @@ const errorMessages: Record<LoadingErrorType, string> = {
  */
 export const LoadingStatus = memo(
     ({ loadingState, loadingMessage = 'Loading...', successMessageDuration = 2000 }: LoadingStatusProps) => {
-        const dispatch = useDispatch();
+        const addNotification = useNotificationsStore((state) => state.addNotification);
+        const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
         const { isLoading, error } = loadingState;
 
         useEffect(() => {
             if (error) {
                 const errorNotificationId = NOTIFICATION_IDS[error.type as LoadingErrorType];
 
-                dispatch(
-                    addNotification({
+                addNotification(({
                         id: errorNotificationId,
                         header: 'Error',
                         content: error.message ?? errorMessages[error.type],
@@ -71,8 +70,7 @@ export const LoadingStatus = memo(
                     })
                 );
             } else if (isLoading) {
-                dispatch(
-                    addNotification({
+                addNotification(({
                         id: NOTIFICATION_IDS.LOADING_STATUS,
                         header: 'Loading',
                         content: loadingMessage,
@@ -81,11 +79,10 @@ export const LoadingStatus = memo(
                 );
             } else {
                 // Clear loading notification
-                dispatch(deleteNotification({ id: NOTIFICATION_IDS.LOADING_STATUS }));
+                deleteNotification(NOTIFICATION_IDS.LOADING_STATUS);
 
                 // Show success message briefly
-                dispatch(
-                    addNotification({
+                addNotification(({
                         id: 'load-success',
                         header: 'Success',
                         content: 'Loaded successfully',
@@ -94,7 +91,7 @@ export const LoadingStatus = memo(
                 );
 
                 const timeoutId = setTimeout(() => {
-                    dispatch(deleteNotification({ id: 'load-success' }));
+                    deleteNotification('load-success');
                 }, successMessageDuration);
 
                 return () => clearTimeout(timeoutId);
@@ -103,10 +100,10 @@ export const LoadingStatus = memo(
             // Cleanup function
             return () => {
                 Object.values(NOTIFICATION_IDS).forEach((id) => {
-                    dispatch(deleteNotification({ id }));
+                    deleteNotification(id);
                 });
             };
-        }, [isLoading, error, dispatch, loadingMessage, successMessageDuration]);
+        }, [isLoading, error, addNotification, deleteNotification, loadingMessage, successMessageDuration]);
 
         return null;
     }

@@ -3,9 +3,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import createWrapper from '@cloudscape-design/components/test-utils/dom';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 
 import {
     mockUserId,
@@ -20,15 +17,6 @@ import { Message } from '@/pages/chat/types';
 
 describe('ChatMessagesContainer', () => {
     // Mock Redux store
-    const mockStore = configureStore({
-        reducer: {
-            config: (state = { useCaseId: 'test-use-case' }) => state
-        },
-        middleware: (getDefaultMiddleware) =>
-            getDefaultMiddleware({
-                serializableCheck: false
-            })
-    });
 
     // Mock the useFeedback hook to avoid Redux dependency issues
     vi.mock('@/hooks/use-feedback', () => ({
@@ -58,11 +46,9 @@ describe('ChatMessagesContainer', () => {
         });
 
         return render(
-            <Provider store={mockStore}>
                 <Wrapper>
                     <ChatMessagesContainer messages={messages} conversationId='fake-id' />
                 </Wrapper>
-            </Provider>
         );
     };
 
@@ -73,19 +59,15 @@ describe('ChatMessagesContainer', () => {
         });
 
         const { rerender } = render(
-            <Provider store={mockStore}>
                 <Wrapper>
                     <ChatMessagesContainer messages={initialMessages} conversationId='fake-id' />
                 </Wrapper>
-            </Provider>
         );
 
         rerender(
-            <Provider store={mockStore}>
                 <Wrapper>
                     <ChatMessagesContainer messages={newMessages} conversationId='fake-id' />
                 </Wrapper>
-            </Provider>
         );
 
         return { rerender };
@@ -164,8 +146,7 @@ describe('ChatMessagesContainer', () => {
             })
         ];
 
-        const { container } = renderWithWrapper(messages);
-        const wrapper = createWrapper(container);
+        renderWithWrapper(messages);
         const scrollContainer = screen.getByTestId('chat-messages-scrollable-container');
         expect(scrollContainer).toBeInTheDocument();
 
@@ -173,9 +154,8 @@ describe('ChatMessagesContainer', () => {
         expect(screen.getByText('Chat message')).toBeInTheDocument();
 
         // Check if alert is rendered properly
-        const alert = wrapper.findAlert();
-        expect(alert?.getElement()).toHaveAttribute('data-testid', 'error-alert1');
-        expect(alert?.getElement().textContent).toContain(errorMessage.trim());
+        const alert = screen.getByTestId('error-alert1');
+        expect(alert.textContent).toContain(errorMessage.trim());
     });
 
     afterEach(() => {

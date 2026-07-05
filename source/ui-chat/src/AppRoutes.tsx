@@ -31,14 +31,14 @@ export const AppRoutes = () => {
                 {/* 404 page for protected routes */}
                 <Route
                     path="*"
-                    element={<ErrorPage hideTitle={true} message="The requested page could not be found 😿" />}
+                    element={<ErrorPage hideTitle={true} message="The requested page could not be found." />}
                 />
             </Route>
 
             {/* 404 page for public routes */}
             <Route
                 path="*"
-                element={<ErrorPage title="Page Not Found" message="The requested page could not be found 😿" />}
+                element={<ErrorPage title="Page Not Found" message="The requested page could not be found." />}
             />
         </Routes>
     );

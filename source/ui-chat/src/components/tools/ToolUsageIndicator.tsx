@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState } from 'react';
-import { Icon } from '@cloudscape-design/components';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ToolUsageInfo } from '../../models/api/response';
 import './ToolUsageIndicator.scss';
 
@@ -56,10 +56,7 @@ export function ToolUsageIndicator({
                         )}
                     </span>
                     {hasContent && (
-                        <Icon
-                            name={isExpanded ? 'caret-up-filled' : 'caret-down-filled'}
-                            size="small"
-                        />
+                        isExpanded ? <ChevronUp className="size-3.5" aria-hidden="true" /> : <ChevronDown className="size-3.5" aria-hidden="true" />
                     )}
                 </button>
             </div>

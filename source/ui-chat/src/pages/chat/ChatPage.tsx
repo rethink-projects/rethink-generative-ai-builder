@@ -1,45 +1,36 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useContext, useEffect, useState, useLayoutEffect } from 'react';
-import { SplitPanelContext, SplitPanelContextType } from '@contexts/SplitPanelContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Message } from './types';
-import { ContentLayout, Header, Container } from '@cloudscape-design/components';
 
-import {
-    ConnectionState,
-    ConnectionStatus,
-    ConnectionErrorType,
-    ChatHeader,
-    ChatInput,
-    ChatMessagesContainer
-} from './components';
-import { useSelector } from 'react-redux';
-import { RootState } from '@store/store';
+import { ConnectionState, ConnectionStatus, ConnectionErrorType, ChatInput, ChatMessagesContainer } from './components';
+import { WelcomeState } from './components/messages/WelcomeState';
 import { useUser } from '@contexts/UserContext';
 import { constructPayload } from '@utils/construct-api-payload';
-import { selectPromptTemplate } from '@store/preferencesSlice';
 import { useChatMessages } from '@hooks/use-chat-message';
 import { ChatResponse } from '@/models';
 import { LoadingStatus, LoadingState, LoadingErrorType } from './components/alerts/LoadingStatus';
-import { SerializedError } from '@reduxjs/toolkit';
-import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { UploadedFile } from '@/types/file-upload';
 import { useFileUpload } from '@/hooks/use-file-upload';
-import { getMultimodalEnabledState } from '@/store/configSlice';
+import { useConfigStore, getMultimodalEnabledState, getUseCaseConfigKey } from '@/stores/config-store';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { useChatStore } from '@/stores/chat-store';
+import { useConversationDetailsQuery, useInvalidateConversations } from '@/hooks/queries';
+import { mapHistoryToMessages } from '@/utils/conversation-history';
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * ChatPage component handles the main chat interface and WebSocket communication.
- * It manages the connection state, message handling, and UI rendering for the chat application.
- *
- * The component uses WebSocket for real-time communication and integrates with various contexts
- * and hooks for state management and user authentication.
+ * It manages the connection state, message handling, resuming past conversations
+ * from the server-side history, and UI rendering for the chat application.
  */
 export default function ChatPage() {
-    const { getAccessToken, detailsError } = useUser();
-    const { setSplitPanelState } = useContext(SplitPanelContext);
+    const { t } = useTranslation();
+    const { getAccessToken, detailsError, userId } = useUser();
 
     const [connectionState, setConnectionState] = useState<ConnectionState>({
         socketStatus: ReadyState.UNINSTANTIATED
@@ -49,22 +40,20 @@ export default function ChatPage() {
         error: detailsError
             ? {
                   type: LoadingErrorType.DATA_FETCH_ERROR,
-                  message: (detailsError as SerializedError).message ?? 'Failed to load use case details'
+                  message: detailsError.message ?? 'Failed to load use case details'
               }
             : undefined
     });
 
     const [authToken, setAuthToken] = useState<string>('');
 
-    const runtimeConfig = useSelector((state: RootState) => state.config.runtimeConfig);
-    const promptTemplate = useSelector((state: RootState) => selectPromptTemplate(state));
-
-    const isMultimodalEnabled = useSelector((state: RootState) => getMultimodalEnabledState(state));
+    const runtimeConfig = useConfigStore((state) => state.runtimeConfig);
+    const useCaseConfigKey = useConfigStore(getUseCaseConfigKey);
+    const promptTemplate = usePreferencesStore((state) => state.promptTemplate);
+    const isMultimodalEnabled = useConfigStore(getMultimodalEnabledState);
 
     /**
      * Retrieves the WebSocket URL with authentication token.
-     * Handles token retrieval errors and updates connection state accordingly.
-     * @returns Promise<string> The WebSocket URL with authentication token
      */
     const getSocketUrl = useCallback(async () => {
         try {
@@ -107,9 +96,6 @@ export default function ChatPage() {
 
     const { generateMessageId } = useFileUpload();
 
-    /**
-     * WebSocket hook configuration for handling real-time communication
-     */
     const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<ChatResponse>(getSocketUrl, {
         retryOnError: true,
         shouldReconnect: (closeEvent) => true,
@@ -118,11 +104,40 @@ export default function ChatPage() {
     });
 
     /**
+     * Resuming a past conversation: when one is picked in the sidebar, fetch
+     * its messages and hydrate the chat state. The backend keys its memory by
+     * UserId+ConversationId, so continuing the conversation just works.
+     */
+    const selectedConversationId = useChatStore((state) => state.selectedConversationId);
+    const { data: conversationDetails, isLoading: isHydrating } = useConversationDetailsQuery(
+        useCaseConfigKey,
+        selectedConversationId
+    );
+
+    useEffect(() => {
+        if (selectedConversationId && conversationDetails?.conversationId === selectedConversationId) {
+            setMessages(mapHistoryToMessages(conversationDetails.messages, userId));
+            setConversationId(selectedConversationId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedConversationId, conversationDetails, userId]);
+
+    /**
+     * Refresh the sidebar's conversation list whenever a response finishes so
+     * new conversations / updated recency show up.
+     */
+    const invalidateConversations = useInvalidateConversations();
+    const wasLoadingRef = useRef(false);
+    useEffect(() => {
+        if (wasLoadingRef.current && !isGenAiResponseLoading && useCaseConfigKey) {
+            invalidateConversations(useCaseConfigKey);
+        }
+        wasLoadingRef.current = isGenAiResponseLoading;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isGenAiResponseLoading, useCaseConfigKey]);
+
+    /**
      * Handles sending user prompts through WebSocket connection.
-     * Validates connection state and handles error scenarios.
-     * @param value The user's message to be sent
-     * @param files Optional files attached to the message
-     * @param providedMessageId Optional message ID from file upload
      */
     const handlePromptSend = useCallback(
         (value: string, files?: UploadedFile[], providedMessageId?: string) => {
@@ -179,16 +194,6 @@ export default function ChatPage() {
     );
 
     /**
-     * Handles opening the settings panel
-     */
-    const openSettings = useCallback(() => {
-        setSplitPanelState((prevState: SplitPanelContextType) => ({
-            ...prevState,
-            isOpen: true
-        }));
-    }, [setSplitPanelState]);
-
-    /**
      * Effect hook to handle incoming WebSocket messages
      */
     useEffect(() => {
@@ -216,7 +221,7 @@ export default function ChatPage() {
         let errorMessage: string | undefined;
 
         if (detailsError) {
-            errorMessage = (detailsError as SerializedError).message ?? 'Failed to load deployment';
+            errorMessage = detailsError.message ?? 'Failed to load deployment';
         } else if (runtimeConfig && !runtimeConfig.UseCaseConfigKey && !runtimeConfig.UseCaseId) {
             errorMessage = 'Use case configuration is missing. Please check your deployment configuration.';
         }
@@ -232,43 +237,54 @@ export default function ChatPage() {
         });
     }, [runtimeConfig?.UseCaseConfig, runtimeConfig?.UseCaseConfigKey, runtimeConfig?.UseCaseId, detailsError]);
 
-    useLayoutEffect(() => {
-        if (!loadingState.isLoading && !loadingState.error && runtimeConfig?.UseCaseConfig) {
-            window.scrollTo(0, 0);
-        }
-    }, [loadingState.isLoading, loadingState.error, runtimeConfig?.UseCaseConfig]);
-
     if (loadingState.isLoading || loadingState.error || !runtimeConfig?.UseCaseConfig) {
-        return <LoadingStatus loadingState={loadingState} loadingMessage="Fetching configuration..." />;
+        return (
+            <div className="flex flex-1 items-center justify-center" data-testid="chat-loading">
+                <LoadingStatus loadingState={loadingState} loadingMessage="Fetching configuration..." />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    {t('loading.fetchingConfig')}
+                </div>
+            </div>
+        );
     }
 
+    const showWelcome = messages.length === 0 && !isHydrating;
+
     return (
-        <ContentLayout header={<Header variant="h1"></Header>} data-testid="chat-content-layout">
-            <div className="chat-container">
-                <ConnectionStatus connectionState={connectionState} />
-                <Container
-                    header={<ChatHeader onRefresh={resetChat} onSettings={openSettings} />}
-                    fitHeight
-                    footer={
-                        <ChatInput
-                            isLoading={isGenAiResponseLoading}
-                            onSend={(value: string) => handlePromptSend(value)}
-                            onSendWithFiles={(value: string, files: UploadedFile[], messageId?: string) =>
-                                handlePromptSend(value, files, messageId)
-                            }
-                            conversationId={conversationId}
-                            onSetConversationId={setConversationId}
-                        />
-                    }
-                >
+        <div className="flex min-h-0 flex-1 flex-col" data-testid="chat-content-layout">
+            <ConnectionStatus connectionState={connectionState} />
+
+            <div className="min-h-0 flex-1">
+                {isHydrating && selectedConversationId ? (
+                    <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                        {t('sidebar.loadingConversations')}
+                    </div>
+                ) : showWelcome ? (
+                    <WelcomeState
+                        onSuggestedPrompt={(prompt) => handlePromptSend(prompt)}
+                        disabled={readyState !== ReadyState.OPEN}
+                    />
+                ) : (
                     <ChatMessagesContainer
                         messages={messages}
                         conversationId={conversationId}
                         thinking={thinking}
                         toolUsage={toolUsage}
                     />
-                </Container>
+                )}
             </div>
-        </ContentLayout>
+
+            <ChatInput
+                isLoading={isGenAiResponseLoading}
+                onSend={(value: string) => handlePromptSend(value)}
+                onSendWithFiles={(value: string, files: UploadedFile[], messageId?: string) =>
+                    handlePromptSend(value, files, messageId)
+                }
+                conversationId={conversationId}
+                onSetConversationId={setConversationId}
+            />
+        </div>
     );
 }

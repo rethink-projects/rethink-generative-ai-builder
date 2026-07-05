@@ -1,11 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCallback, useReducer, useRef } from 'react';
+import { useCallback } from 'react';
 import { ChatResponse, isChatSuccessResponse, isErrorResponse, SourceDocument, ToolUsageInfo } from '../models';
 import { ChatActionTypes, Message } from '../pages/chat/types';
 import { useUser } from '../contexts/UserContext';
-import { chatReducer } from '../reducers/chat-reducer';
+import { useChatStore } from '../stores/chat-store';
 import { END_CONVERSATION_TOKEN } from '../utils/constants';
 import { UploadedFile } from '../types/file-upload';
 
@@ -79,29 +79,16 @@ export interface ChatState {
 }
 
 /**
- * Initial state for the chat
- */
-const initialState: ChatState = {
-    messages: [],
-    currentResponse: '',
-    isGenAiResponseLoading: false,
-    sourceDocuments: [],
-    conversationId: '',
-    isStreaming: false,
-    streamingMessageId: undefined,
-    thinking: undefined,
-    toolUsage: []
-};
-
-/**
- * Custom hook to manage chat messages and state
+ * Custom hook to manage chat messages and state.
+ * State lives in the shared Zustand chat store (see stores/chat-store.ts) so the
+ * conversation sidebar can also read/update it; all transitions still flow
+ * through the pure chatReducer.
  * @returns {Object} Chat state and handler functions
  */
 export const useChatMessages = () => {
-    const [state, dispatch] = useReducer(chatReducer, initialState);
+    const state = useChatStore();
+    const dispatch = useChatStore((s) => s.dispatch);
     const { userId } = useUser();
-    const streamingStateRef = useRef(false);
-    const thinkingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     /**
      * Handles incoming chat responses and updates state accordingly
@@ -121,7 +108,7 @@ export const useChatMessages = () => {
                 }
 
                 if (isErrorResponse(response) && response.errorMessage) {
-                    streamingStateRef.current = false;
+                    useChatStore.getState().setStreamingActive(false);
                     dispatch({
                         type: ChatActionTypes.SET_ERROR,
                         payload: response.errorMessage
@@ -143,7 +130,7 @@ export const useChatMessages = () => {
 
 
                 if (response.toolUsage) {
-                    const existingToolIndex = state.toolUsage.findIndex(
+                    const existingToolIndex = useChatStore.getState().toolUsage.findIndex(
                         tool => tool.toolName === response.toolUsage!.toolName && 
                                 tool.startTime === response.toolUsage!.startTime
                     );
@@ -161,20 +148,20 @@ export const useChatMessages = () => {
                     }
                 }
 
-                if (response.isStreaming === true && !streamingStateRef.current) {
-                    streamingStateRef.current = true;
+                if (response.isStreaming === true && !useChatStore.getState().streamingActive) {
+                    useChatStore.getState().setStreamingActive(true);
                     dispatch({ 
                         type: ChatActionTypes.START_STREAMING, 
                         payload: { messageId: response.messageId } 
                     });
                 }
 
-                const isStreamingResponse = response.isStreaming === true || streamingStateRef.current;
+                const isStreamingResponse = response.isStreaming === true || useChatStore.getState().streamingActive;
 
                 if (response.data !== undefined) {
                     if (response.data === END_CONVERSATION_TOKEN) {
                         if (isStreamingResponse) {
-                            streamingStateRef.current = false;
+                            useChatStore.getState().setStreamingActive(false);
                             dispatch({ type: ChatActionTypes.COMPLETE_STREAMING });
                         } else {
                             dispatch({ type: ChatActionTypes.COMPLETE_AI_RESPONSE });
@@ -200,8 +187,8 @@ export const useChatMessages = () => {
                     }
                 }
 
-                if (response.streamComplete === true && (streamingStateRef.current || response.isStreaming)) {
-                    streamingStateRef.current = false;
+                if (response.streamComplete === true && (useChatStore.getState().streamingActive || response.isStreaming)) {
+                    useChatStore.getState().setStreamingActive(false);
                     dispatch({ type: ChatActionTypes.COMPLETE_STREAMING });
                 }
             } catch (error) {
@@ -218,8 +205,7 @@ export const useChatMessages = () => {
      * Resets the chat state to initial values
      */
     const resetChat = useCallback(() => {
-        streamingStateRef.current = false;
-        dispatch({ type: ChatActionTypes.RESET_CHAT });
+        useChatStore.getState().resetChat();
     }, []);
 
     /**

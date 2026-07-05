@@ -2,5 +2,90 @@
   "sidenav": {
     "chatOption": "Chat",
     "header": "Chat"
+  },
+  "sidebar": {
+    "newConversation": "Nueva conversación",
+    "recentConversations": "Conversaciones recientes",
+    "emptyConversations": "Tus conversaciones aparecerán aquí.",
+    "conversationsUnavailable": "El historial no está disponible para este asistente.",
+    "loadingConversations": "Cargando conversaciones...",
+    "openSidebar": "Abrir menú lateral",
+    "closeSidebar": "Cerrar menú lateral"
+  },
+  "header": {
+    "settings": "Configuración",
+    "darkMode": "Cambiar a tema oscuro",
+    "lightMode": "Cambiar a tema claro",
+    "signOut": "Cerrar sesión",
+    "userMenu": "Menú de usuario"
+  },
+  "welcome": {
+    "title": "¡Hola! ¿Cómo puedo ayudarte hoy?",
+    "subtitle": "Pregunta lo que quieras: responderé usando el conocimiento configurado para este asistente.",
+    "suggestionsLabel": "Sugerencias para empezar",
+    "suggestion1": "¿Con qué puedes ayudarme?",
+    "suggestion2": "Resume los puntos clave de un tema",
+    "suggestion3": "Explica un concepto con palabras sencillas",
+    "suggestion4": "Ayúdame a redactar un mensaje corto"
+  },
+  "composer": {
+    "placeholder": "Haz una pregunta...",
+    "send": "Enviar mensaje",
+    "generating": "Generando respuesta...",
+    "charactersRemaining": "Quedan {{count}} caracteres",
+    "overLimit": "El mensaje supera el límite en {{count}} caracteres",
+    "attachFiles": "Adjuntar archivos",
+    "removeFile": "Quitar archivo {{fileName}}"
+  },
+  "messages": {
+    "assistantName": "Asistente",
+    "you": "Tú",
+    "copy": "Copiar",
+    "copied": "Mensaje copiado",
+    "helpful": "Útil",
+    "notHelpful": "No fue útil",
+    "feedbackThanks": "¡Gracias por tu opinión!",
+    "showMore": "Mostrar más",
+    "showLess": "Mostrar menos",
+    "sources": "Fuentes",
+    "responseComplete": "Respuesta completada",
+    "thinking": "Pensando...",
+    "toolsUsed": "Herramientas utilizadas"
+  },
+  "feedbackForm": {
+    "title": "Cuéntanos más",
+    "commentLabel": "Comentarios adicionales (opcional)",
+    "reasonsLabel": "¿Cuál fue el problema?",
+    "submit": "Enviar",
+    "cancel": "Cancelar"
+  },
+  "settings": {
+    "title": "Configuración",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "language": "Idioma",
+    "advanced": "Avanzado: prompt del sistema",
+    "advancedDescription": "El prompt del sistema guía cómo responde el asistente. Cámbialo solo si sabes lo que haces.",
+    "promptTemplateLabel": "Prompt del sistema",
+    "reset": "Restaurar predeterminado",
+    "save": "Guardar",
+    "promptSaved": "Prompt del sistema guardado"
+  },
+  "connection": {
+    "connecting": "Conectando...",
+    "reconnecting": "Conexión perdida. Intentando reconectar...",
+    "failed": "No se pudo conectar. Revisa tu red y recarga la página."
+  },
+  "loading": {
+    "fetchingConfig": "Cargando asistente...",
+    "error": "Algo salió mal al cargar. Recarga la página."
+  },
+  "errors": {
+    "pageNotFound": "Página no encontrada",
+    "pageNotFoundMessage": "La página que buscas no existe."
+  },
+  "common": {
+    "skipToContent": "Saltar al contenido principal"
   }
 }

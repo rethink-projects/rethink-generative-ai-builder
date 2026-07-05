@@ -1,21 +1,14 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React from 'react';
-import ButtonGroup, { ButtonGroupProps } from '@cloudscape-design/components/button-group';
-import StatusIndicator from '@cloudscape-design/components/status-indicator';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { getFeedbackEnabledState } from '@/store/configSlice';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Check, Copy, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useConfigStore, getFeedbackEnabledState } from '@/stores/config-store';
 import { FEEDBACK_HELPFUL, FEEDBACK_NOT_HELPFUL } from '@/utils';
+import { cn } from '@/lib/utils';
 
-/**
- * Props interface for ChatBubbleActions component
- * @interface ChatBubbleActionsProps
- * @property {string} content - The text content to be copied
- * @property {function} onFeedback - Callback function when feedback is provided
- * @property {boolean} feedbackSubmitted - Indicates if feedback has been submitted
- */
 interface ChatBubbleActionsProps {
     content: string;
     onFeedback: (feedback: typeof FEEDBACK_HELPFUL | typeof FEEDBACK_NOT_HELPFUL) => void;
@@ -24,9 +17,7 @@ interface ChatBubbleActionsProps {
 }
 
 /**
- * Component that renders action buttons for chat bubbles including feedback and copy functionality
- * @param {ChatBubbleActionsProps} props - Component props
- * @returns {JSX.Element} Button group with feedback and copy actions
+ * Copy + thumbs up/down actions shown under assistant messages.
  */
 export const ChatBubbleActions: React.FC<ChatBubbleActionsProps> = ({
     content,
@@ -34,86 +25,68 @@ export const ChatBubbleActions: React.FC<ChatBubbleActionsProps> = ({
     feedbackSubmitted,
     feedbackType
 }: ChatBubbleActionsProps) => {
-    const feedbackEnabledState = useSelector((state: RootState) => getFeedbackEnabledState(state));
+    const { t } = useTranslation();
+    const feedbackEnabled = useConfigStore(getFeedbackEnabledState);
+    const [copied, setCopied] = useState(false);
 
-    /**
-     * Handles copying content to clipboard
-     */
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(content);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         } catch (error) {
             console.error('Failed to copy message:', error);
         }
     };
 
-    /**
-     * Handles button click events for copy and feedback actions
-     * @param {Object} param - Event parameter object
-     * @param {Object} param.detail - Details of the clicked item
-     * @param {string} param.detail.id - ID of the clicked item
-     * @param {boolean} [param.detail.pressed] - Press state for toggle buttons
-     */
-    const handleItemClick = ({ detail }: { detail: { id: string; pressed?: boolean } }) => {
-        if (detail.id === 'copy') {
-            handleCopy();
-            return;
-        }
-        if (!feedbackSubmitted) {
-            if (detail.id === FEEDBACK_HELPFUL) {
-                onFeedback(FEEDBACK_HELPFUL);
-            } else if (detail.id === FEEDBACK_NOT_HELPFUL) {
-                onFeedback(FEEDBACK_NOT_HELPFUL);
-            }
-        }
-    };
-
-    // Prepare items array based on feedback enabled state
-    const actionItems = [];
-
-    // Only add feedback buttons if feedback is enabled
-    if (feedbackEnabledState) {
-        actionItems.push({
-            type: 'group',
-            text: 'Feedback',
-            items: [
-                {
-                    type: 'icon-button',
-                    id: FEEDBACK_HELPFUL,
-                    iconName: feedbackType === FEEDBACK_HELPFUL ? 'thumbs-up-filled' : 'thumbs-up',
-                    text: 'Helpful',
-                    disabled: feedbackSubmitted,
-                    'data-testid': 'feedback-helpful-button'
-                },
-                {
-                    type: 'icon-button',
-                    id: FEEDBACK_NOT_HELPFUL,
-                    iconName: feedbackType === FEEDBACK_NOT_HELPFUL ? 'thumbs-down-filled' : 'thumbs-down',
-                    text: 'Not helpful',
-                    disabled: feedbackSubmitted,
-                    'data-testid': 'feedback-not-helpful-button'
-                }
-            ]
-        });
-    }
-
-    // Always add copy button
-    actionItems.push({
-        type: 'icon-button',
-        id: 'copy',
-        iconName: 'copy',
-        text: 'Copy',
-        popoverFeedback: <StatusIndicator type="success">Message copied</StatusIndicator>,
-        'data-testid': 'copy-button'
-    });
-
     return (
-        <ButtonGroup
-            ariaLabel="Chat bubble actions"
-            variant="icon"
-            onItemClick={handleItemClick}
-            items={actionItems as ButtonGroupProps.ItemOrGroup[]}
+        <div
+            role="group"
+            aria-label="Message actions"
+            className="mt-1 flex items-center gap-0.5"
             data-testid="chat-bubble-actions-btn-grp"
-        />
+        >
+            {feedbackEnabled && (
+                <>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn('size-7 text-muted-foreground', feedbackType === FEEDBACK_HELPFUL && 'text-primary')}
+                        aria-label={t('messages.helpful')}
+                        aria-pressed={feedbackType === FEEDBACK_HELPFUL}
+                        disabled={feedbackSubmitted}
+                        onClick={() => !feedbackSubmitted && onFeedback(FEEDBACK_HELPFUL)}
+                        data-testid="feedback-helpful-button"
+                    >
+                        <ThumbsUp className="size-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                            'size-7 text-muted-foreground',
+                            feedbackType === FEEDBACK_NOT_HELPFUL && 'text-destructive'
+                        )}
+                        aria-label={t('messages.notHelpful')}
+                        aria-pressed={feedbackType === FEEDBACK_NOT_HELPFUL}
+                        disabled={feedbackSubmitted}
+                        onClick={() => !feedbackSubmitted && onFeedback(FEEDBACK_NOT_HELPFUL)}
+                        data-testid="feedback-not-helpful-button"
+                    >
+                        <ThumbsDown className="size-3.5" />
+                    </Button>
+                </>
+            )}
+            <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-muted-foreground"
+                aria-label={copied ? t('messages.copied') : t('messages.copy')}
+                onClick={handleCopy}
+                data-testid="copy-button"
+            >
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            </Button>
+        </div>
     );
 };
