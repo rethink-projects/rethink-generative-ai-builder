@@ -1,0 +1,46 @@
+/* Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/*
+ * Rethink design tokens + Tailwind utilities for the deployment dashboard.
+ * Preflight is intentionally NOT imported so Cloudscape components keep
+ * their own base styles while screens are migrated incrementally.
+ */
+
+@layer theme, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --background: #fafaf7;
+    --foreground: #191b14;
+    --card: #ffffff;
+    --primary: #3f6212;
+    --primary-foreground: #f7fee7;
+    --muted-foreground: #5c6152;
+    --border: #e2e4d9;
+    --brand-lime: #c6f542;
+}
+
+.dark {
+    --background: #0e0f0c;
+    --foreground: #f2f4ec;
+    --card: #16180f;
+    --primary: #c6f542;
+    --primary-foreground: #1a2405;
+    --muted-foreground: #a3a894;
+    --border: #2b2e21;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-border: var(--border);
+    --color-brand-lime: var(--brand-lime);
+}

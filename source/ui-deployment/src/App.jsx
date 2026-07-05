@@ -13,7 +13,8 @@ import { useCreateReducer } from './hooks/useCreateReducer';
 import { initialState, insertRuntimeConfig } from './contexts/home.state';
 import { HomeContextProvider } from './contexts/home.context';
 import { Auth } from 'aws-amplify';
-import { useEffect, useContext } from 'react';
+import { useEffect, useContext, useState } from 'react';
+import { applyColorMode, loadDarkModePreference, persistDarkModePreference } from './theme';
 import { UserContext } from './UserContext';
 import { TextUseCaseType } from './components/wizard/interfaces/UseCaseTypes/Text';
 import { AgentUseCaseType } from './components/wizard/interfaces/UseCaseTypes/Agent';
@@ -51,6 +52,26 @@ function App({ runtimeConfig }) {
         }
     };
 
+    const [darkMode, setDarkMode] = useState(loadDarkModePreference);
+
+    const toggleDarkMode = () => {
+        const next = !darkMode;
+        setDarkMode(next);
+        applyColorMode(next);
+        persistDarkModePreference(next);
+    };
+
+    const themeToggleUtility = {
+        type: 'button',
+        text: darkMode ? 'Light mode' : 'Dark mode',
+        ariaLabel: darkMode ? 'Switch to light theme' : 'Switch to dark theme',
+        iconName: darkMode ? 'star' : 'star-filled',
+        disableTextCollapse: true,
+        disableUtilityCollapse: true,
+        onClick: toggleDarkMode,
+        variant: 'link'
+    };
+
     const onSignout = async () => {
         sessionStorage.removeItem('init-state');
         localStorage.removeItem('Preferences');
@@ -86,6 +107,7 @@ function App({ runtimeConfig }) {
                             title: APP_TRADEMARK_NAME
                         }}
                         utilities={[
+                            themeToggleUtility,
                             {
                                 type: 'button',
                                 text: 'Sign out',
@@ -126,6 +148,7 @@ function App({ runtimeConfig }) {
                             title: APP_TRADEMARK_NAME
                         }}
                         utilities={[
+                            themeToggleUtility,
                             {
                                 type: 'button',
                                 text: 'Sign out',

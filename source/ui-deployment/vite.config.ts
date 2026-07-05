@@ -5,6 +5,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
+import tailwindcss from '@tailwindcss/vite';
 import * as path from 'path';
 
 // Respect WORKERS_PER_SUITE env var to limit vitest fork parallelism in CI.
@@ -12,7 +13,7 @@ import * as path from 'path';
 const workersPerSuite = process.env.WORKERS_PER_SUITE ? Number.parseInt(process.env.WORKERS_PER_SUITE, 10) : 0;
 
 export default defineConfig({
-    plugins: [react(), viteTsconfigPaths()],
+    plugins: [react(), viteTsconfigPaths(), tailwindcss()],
     build: {
         outDir: 'build',
         chunkSizeWarningLimit: 4000,
