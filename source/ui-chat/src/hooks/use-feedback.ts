@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useSubmitFeedbackMutation } from '../store/solutionApi';
-import { getUseCaseConfigKey, getUseCaseId } from '../store/configSlice';
+import { useSubmitFeedbackMutation } from './queries';
+import { useConfigStore, getUseCaseConfigKey, getUseCaseId } from '../stores/config-store';
 import { FeedbackFormData, FeedbackType } from '../pages/chat/components/input/FeedbackForm';
 import { ChatBubbleMessage } from '../pages/chat/types';
 
@@ -31,9 +30,9 @@ export const useFeedback = (message: ChatBubbleMessage, conversationId: string):
     const [feedbackType, setFeedbackType] = useState<FeedbackType>('');
     const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
     const [feedbackError, setFeedbackError] = useState<string | null>(null);
-    const [submitFeedback, { isLoading: isSubmittingFeedback }] = useSubmitFeedbackMutation();
-    const useCaseConfigKey = useSelector(getUseCaseConfigKey);
-    const useCaseId = useSelector(getUseCaseId);
+    const { mutateAsync: submitFeedback, isPending: isSubmittingFeedback } = useSubmitFeedbackMutation();
+    const useCaseConfigKey = useConfigStore(getUseCaseConfigKey);
+    const useCaseId = useConfigStore(getUseCaseId);
 
     const handleFeedbackButtonClick = (type: FeedbackType) => {
         setFeedbackType(type);
@@ -76,7 +75,6 @@ export const useFeedback = (message: ChatBubbleMessage, conversationId: string):
             useCaseId,
             feedbackData: feedbackPayload
         })
-            .unwrap()
             .then(() => {
                 setShowFeedbackForm(false);
                 setFeedbackSubmitted(true);
@@ -86,7 +84,7 @@ export const useFeedback = (message: ChatBubbleMessage, conversationId: string):
                 console.error('Error submitting feedback:', error);
                 setShowFeedbackForm(false);
                 setFeedbackSubmitted(false);
-                setFeedbackError(error.data?.message || 'Failed to submit feedback. Please try again or contact a system administrator.');
+                setFeedbackError(error?.message || 'Failed to submit feedback. Please try again or contact a system administrator.');
             });
     };
 

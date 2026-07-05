@@ -45,3 +45,24 @@ export interface MultimodalParams {
 export interface FeedbackParams {
     FeedbackEnabled: boolean;
 }
+
+export const LIST_CONVERSATIONS_PAGE_SIZE = 50;
+export const MAX_CONVERSATION_TITLE_LENGTH = 60;
+
+export enum ApiResources {
+    DETAILS = '/details/{useCaseConfigKey}',
+    CONVERSATIONS = '/conversations/{useCaseConfigKey}',
+    CONVERSATION_DETAILS = '/conversations/{useCaseConfigKey}/{conversationId}'
+}
+
+export interface ConversationSummary {
+    conversationId: string;
+    title: string;
+    expiresAt: number | null;
+}
+
+export interface ConversationMessageResponse {
+    messageId: string | null;
+    type: string;
+    content: string;
+}

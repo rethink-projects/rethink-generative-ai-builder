@@ -1,7 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Box, Link, Popover } from '@cloudscape-design/components';
 
 export const AUTHORS = {
     ASSISTANT: 'assistant'

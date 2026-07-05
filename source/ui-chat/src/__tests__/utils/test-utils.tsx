@@ -1,52 +1,36 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SplitPanelContextProvider } from '../../contexts/SplitPanelContext.tsx';
-import { configureStore } from '@reduxjs/toolkit';
-import { Provider } from 'react-redux';
-import { NotificationContextProvider } from '../../contexts/NotificationContext.tsx';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../../AppRoutes.tsx';
 import { render } from '@testing-library/react';
-import { rootReducer, RootState } from '../../store/store.ts';
-import { ToolsContextProvider } from '../../contexts/ToolsContext.tsx';
-import { solutionApi } from '../../store/solutionApi.ts';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { UserContext } from '../../contexts/UserContext.tsx';
 import { AuthUser } from '@aws-amplify/auth';
+import { applyStateToStores, createTestQueryClient, RootState } from './test-redux-store-factory';
 
 /*
- * Render a page within the context of a Router, redux store and NotificationContext.
- *
- * This function provides setup for component tests that
- * - interact with the store state,
- *  -navigate between pages
- *  and/or
- * - emit notifications.
+ * Render a page within the context of a Router, the Zustand stores and a
+ * TanStack QueryClient. `preloadedState` accepts the legacy slice-shaped
+ * object ({ config, preferences, notifications }) and seeds the stores.
  */
 export function renderAppContent(props?: { preloadedState?: Partial<RootState>; initialRoute: string }) {
-    const store = configureStore({
-        reducer: rootReducer,
-        preloadedState: props?.preloadedState ?? {},
-        middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(solutionApi.middleware)
-    });
+    if (props?.preloadedState) {
+        applyStateToStores(props.preloadedState);
+    }
+    const queryClient = createTestQueryClient();
 
     const renderResult = render(
         <MemoryRouter initialEntries={[props?.initialRoute ?? '/']}>
-            <Provider store={store}>
-                <NotificationContextProvider>
-                    <ToolsContextProvider>
-                        <SplitPanelContextProvider>
-                            <AppRoutes></AppRoutes>
-                        </SplitPanelContextProvider>
-                    </ToolsContextProvider>
-                </NotificationContextProvider>
-            </Provider>
+            <QueryClientProvider client={queryClient}>
+                <AppRoutes></AppRoutes>
+            </QueryClientProvider>
         </MemoryRouter>
     );
     return {
         renderResult,
-        store
+        queryClient
     };
 }
 
@@ -62,9 +46,7 @@ interface WrapperOptions {
 }
 
 /**
- * Creates a wrapper component with UserContext for testing
- * @param options Configuration options for the wrapper
- * @returns A wrapper component that provides UserContext
+ * Creates a wrapper component with UserContext (and a QueryClient) for testing
  */
 export const createTestWrapper = (options: WrapperOptions = {}) => {
     const {
@@ -93,7 +75,11 @@ export const createTestWrapper = (options: WrapperOptions = {}) => {
         getAccessToken
     };
 
+    const queryClient = createTestQueryClient();
+
     return ({ children }: { children: ReactNode }) => (
-        <UserContext.Provider value={mockUserContext}>{children}</UserContext.Provider>
+        <QueryClientProvider client={queryClient}>
+            <UserContext.Provider value={mockUserContext}>{children}</UserContext.Provider>
+        </QueryClientProvider>
     );
 };

@@ -6,8 +6,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { UserProvider, useUser } from '../../contexts/UserContext';
 import { createTestWrapper } from '../utils/test-utils';
 import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
-import { testStoreFactory } from '../utils/test-redux-store-factory';
-import { Provider } from 'react-redux';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { testStoreFactory, createTestQueryClient } from '../utils/test-redux-store-factory';
 
 // Mock the auth functions
 vi.mock('@aws-amplify/auth', () => ({
@@ -93,13 +93,14 @@ describe('UserContext', () => {
     });
 
     describe('UserProvider', () => {
-        // Create a wrapper that provides both Redux store and UserProvider
+        // Create a wrapper that seeds the Zustand stores and provides a QueryClient + UserProvider
         const createWrapper = (stateOverrides = {}) => {
-            const store = testStoreFactory.createStore(stateOverrides);
+            testStoreFactory.createStore(stateOverrides);
+            const queryClient = createTestQueryClient();
             return ({ children }: { children: React.ReactNode }) => (
-                <Provider store={store}>
+                <QueryClientProvider client={queryClient}>
                     <UserProvider>{children}</UserProvider>
-                </Provider>
+                </QueryClientProvider>
             );
         };
 

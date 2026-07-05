@@ -1,15 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import ExpandableSection from '@cloudscape-design/components/expandable-section';
-import SpaceBetween from '@cloudscape-design/components/space-between';
-import { Icon } from '@cloudscape-design/components';
+import { AlertCircle, Download, FileText } from 'lucide-react';
 import { UploadedFile } from '../../types/file-upload';
 import { formatFileNameForDisplay } from '../../utils/file-upload';
-import { useLazyGetFileDownloadUrlQuery } from '../../store/solutionApi';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
-import { useState } from 'react';
+import { fetchFileDownloadUrl } from '../../hooks/queries';
+import { useConfigStore } from '../../stores/config-store';
+import { cn } from '@/lib/utils';
 
 interface FileDisplayProps {
     readonly files: UploadedFile[];
@@ -25,9 +22,7 @@ interface FileTagProps {
 const FileTag = ({ file, hasError, showDownload = false }: FileTagProps) => {
     const displayName = formatFileNameForDisplay(file.fileName);
     const isNameTruncated = displayName !== file.fileName;
-    const [getDownloadUrl] = useLazyGetFileDownloadUrlQuery();
-    const useCaseId = useSelector((state: RootState) => state.config.runtimeConfig?.UseCaseId);
-    const [isHovered, setIsHovered] = useState(false);
+    const useCaseId = useConfigStore((state) => state.runtimeConfig?.UseCaseId);
 
     const handleDownload = async () => {
         if (!useCaseId || !file.conversationId || !file.messageId) {
@@ -40,12 +35,12 @@ const FileTag = ({ file, hasError, showDownload = false }: FileTagProps) => {
         }
 
         try {
-            const result = await getDownloadUrl({
+            const result = await fetchFileDownloadUrl({
                 useCaseId,
                 conversationId: file.conversationId,
                 messageId: file.messageId,
                 fileName: file.fileName
-            }).unwrap();
+            });
 
             window.open(result.downloadUrl, '_blank');
         } catch (error) {
@@ -53,51 +48,31 @@ const FileTag = ({ file, hasError, showDownload = false }: FileTagProps) => {
         }
     };
 
-    const tagStyle: React.CSSProperties = {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '2px 8px',
-        backgroundColor: '#f5f5f5',
-        borderRadius: '4px',
-        fontSize: '12px',
-        lineHeight: '16px',
-        color: '#333',
-        cursor: showDownload ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
-        maxWidth: '200px'
-    };
-
-    const tagHoverStyle: React.CSSProperties = {
-        ...tagStyle,
-        backgroundColor: showDownload && isHovered ? '#e8f4fd' : tagStyle.backgroundColor
-    };
-
     if (hasError) {
         return (
-            <div style={{ ...tagStyle, backgroundColor: '#fdf2f2' }}>
-                <Icon name="status-negative" size="small" />
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {displayName}
-                </span>
-            </div>
+            <span className="inline-flex max-w-52 items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
+                <AlertCircle className="size-3 shrink-0" aria-hidden="true" />
+                <span className="truncate">{displayName}</span>
+            </span>
         );
     }
 
     return (
-        <div
-            style={tagHoverStyle}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+        <button
+            type="button"
+            className={cn(
+                'group inline-flex max-w-52 items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs',
+                showDownload ? 'cursor-pointer hover:bg-accent' : 'cursor-default'
+            )}
             onClick={showDownload ? handleDownload : undefined}
             title={isNameTruncated ? file.fileName : undefined}
         >
-            <Icon name="file" size="small" />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                {displayName}
-            </span>
-            {showDownload && isHovered && <Icon name="download" size="small" />}
-        </div>
+            <FileText className="size-3 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">{displayName}</span>
+            {showDownload && (
+                <Download className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+            )}
+        </button>
     );
 };
 
@@ -105,17 +80,10 @@ export const FileDisplay = ({ files, hasError = false }: FileDisplayProps) => {
     if (!files?.length) return null;
 
     return (
-        <ExpandableSection
-            variant="inline"
-            headingTagOverride="h5"
-            headerText="Attached Files"
-            data-testid="file-display"
-        >
-            <SpaceBetween direction="horizontal" size="xs">
-                {files.map((file) => (
-                    <FileTag key={file.key} file={file} hasError={hasError} showDownload={true} />
-                ))}
-            </SpaceBetween>
-        </ExpandableSection>
+        <div className="mb-1 flex flex-wrap gap-1" data-testid="file-display">
+            {files.map((file) => (
+                <FileTag key={file.key} file={file} hasError={hasError} showDownload={true} />
+            ))}
+        </div>
     );
 };

@@ -1,30 +1,40 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChatBubble } from '@cloudscape-design/chat-components';
 import { ChatBubbleAvatar } from '@/components/common/common-components';
 import { ChatBubbleActions } from '../actions/ChatBubbleActions';
 import MarkdownContent from '@/components/markdown/MarkdownContent';
 import { SourceDocumentsSection } from '../source-documents/SourceDocument';
 import { IncomingMessageProps } from './types';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FeedbackForm } from '../input/FeedbackForm';
 import { useFeedback } from '@/hooks/use-feedback';
-import { StatusIndicator } from '@cloudscape-design/components';
 import { ThinkingIndicator } from '@/components/thinking/ThinkingIndicator';
 import { ToolUsageList } from '@/components/tool-usage/ToolUsageList';
 import { AgentBuilderChatBubbleMessage } from '../../types';
-import { useSelector } from 'react-redux';
-import { selectUseCaseType } from '@/store/configSlice';
+import { useConfigStore, selectUseCaseType } from '@/stores/config-store';
 import { USE_CASE_TYPES } from '@/utils/constants';
 
 const isAgentBuilderMessage = (message: any): message is AgentBuilderChatBubbleMessage => {
     return message && 'thinking' in message && message.thinking !== undefined;
 };
 
-export const IncomingMessage = ({ message, author, showActions, conversationId, toolUsage, 'data-testid': dataTestId }: IncomingMessageProps) => {
+/**
+ * Assistant message: avatar + markdown content with optional thinking
+ * indicator, tool usage, RAG sources, and copy/feedback actions.
+ */
+export const IncomingMessage = ({
+    message,
+    author,
+    showActions,
+    conversationId,
+    toolUsage,
+    'data-testid': dataTestId
+}: IncomingMessageProps) => {
+    const { t } = useTranslation();
     const [showFeedbackConfirmation, setShowFeedbackConfirmation] = useState(false);
-    const useCaseType = useSelector(selectUseCaseType);
+    const useCaseType = useConfigStore(selectUseCaseType);
     const {
         showFeedbackForm,
         setShowFeedbackForm,
@@ -35,10 +45,10 @@ export const IncomingMessage = ({ message, author, showActions, conversationId, 
         handleFeedbackButtonClick,
         handleFeedbackSubmit
     } = useFeedback(message, conversationId);
-    
-    const shouldShowThinkingIndicator = (useCaseType === USE_CASE_TYPES.AGENT_BUILDER || useCaseType === USE_CASE_TYPES.WORKFLOW) && isAgentBuilderMessage(message);
-    
-    const shouldShowToolUsage = (useCaseType === USE_CASE_TYPES.AGENT_BUILDER || useCaseType === USE_CASE_TYPES.WORKFLOW) && toolUsage && toolUsage.length > 0;
+
+    const isAgentLikeUseCase = useCaseType === USE_CASE_TYPES.AGENT_BUILDER || useCaseType === USE_CASE_TYPES.WORKFLOW;
+    const shouldShowThinkingIndicator = isAgentLikeUseCase && isAgentBuilderMessage(message);
+    const shouldShowToolUsage = isAgentLikeUseCase && toolUsage && toolUsage.length > 0;
 
     // Reset feedback form state when message changes
     useEffect(() => {
@@ -58,46 +68,39 @@ export const IncomingMessage = ({ message, author, showActions, conversationId, 
         }
     }, [feedbackSubmitted, feedbackError]);
 
+    const isLoading = message.avatarLoading && !message.content;
+
     return (
-        <>
-            <ChatBubble
-                key={message.authorId + message.timestamp}
-                avatar={<ChatBubbleAvatar {...author} loading={message.avatarLoading} />}
-                ariaLabel={`${author.name} at ${message.timestamp}`}
-                type="incoming"
-                hideAvatar={message.hideAvatar}
-                actions={
-                    showActions ? (
-                        <ChatBubbleActions
-                            content={String(message.content)}
-                            onFeedback={handleFeedbackButtonClick}
-                            feedbackSubmitted={feedbackSubmitted}
-                            feedbackType={feedbackType}
-                        />
-                    ) : undefined
-                }
-                showLoadingBar={message.avatarLoading}
-                data-testid={dataTestId}
-            >
-                <MarkdownContent content={String(message.content)} />
-                
-                {shouldShowToolUsage && (
-                    <ToolUsageList 
-                        toolUsage={toolUsage!} 
-                        data-testid="message-tool-usage"
-                    />
+        <div className="flex gap-3" data-testid={dataTestId} aria-label={`${author.name} at ${message.timestamp}`}>
+            {!message.hideAvatar && <ChatBubbleAvatar {...author} loading={message.avatarLoading} />}
+            <div className="min-w-0 flex-1 pt-1">
+                {isLoading && !shouldShowThinkingIndicator && (
+                    <p className="animate-pulse text-sm text-muted-foreground" data-testid="incoming-loading">
+                        {t('messages.thinking')}
+                    </p>
                 )}
-                
+
                 {shouldShowThinkingIndicator && message.thinking && (
-                    <ThinkingIndicator 
-                        thinking={message.thinking} 
-                        data-testid="message-thinking-indicator"
-                    />
+                    <ThinkingIndicator thinking={message.thinking} data-testid="message-thinking-indicator" />
                 )}
-                
+
+                <MarkdownContent content={String(message.content)} />
+
+                {shouldShowToolUsage && <ToolUsageList toolUsage={toolUsage!} data-testid="message-tool-usage" />}
+
                 {message.sourceDocuments && message.sourceDocuments.length > 0 && (
                     <SourceDocumentsSection sourceDocuments={message.sourceDocuments} />
                 )}
+
+                {showActions && (
+                    <ChatBubbleActions
+                        content={String(message.content)}
+                        onFeedback={handleFeedbackButtonClick}
+                        feedbackSubmitted={feedbackSubmitted}
+                        feedbackType={feedbackType}
+                    />
+                )}
+
                 {showFeedbackForm && (
                     <FeedbackForm
                         onSubmit={handleFeedbackSubmit}
@@ -106,15 +109,17 @@ export const IncomingMessage = ({ message, author, showActions, conversationId, 
                         isLoading={isSubmittingFeedback}
                     />
                 )}
+
                 {showFeedbackConfirmation && (
-                    <StatusIndicator 
-                        type={feedbackError ? "error" : "success"} 
+                    <p
+                        role="status"
+                        className={feedbackError ? 'mt-1 text-xs text-destructive' : 'mt-1 text-xs text-primary'}
                         data-testid="feedback-confirmation"
                     >
-                        {feedbackError || "Thank you for your feedback!"}
-                    </StatusIndicator>
+                        {feedbackError || t('messages.feedbackThanks')}
+                    </p>
                 )}
-            </ChatBubble>
-        </>
+            </div>
+        </div>
     );
 };

@@ -770,6 +770,10 @@ export abstract class UseCaseStack extends BaseStack {
             this.useCaseRestEndpointSetup.detailsGETMethod
         );
 
+        // Redeploy must also wait for the conversation history routes so they are included in the stage
+        redeployRestApiCustomResource.node.addDependency(this.useCaseRestEndpointSetup.conversationsGETMethod);
+        redeployRestApiCustomResource.node.addDependency(this.useCaseRestEndpointSetup.conversationDetailsGETMethod);
+
         (redeployRestApiCustomResource.node.defaultChild as cdk.CfnResource).cfnOptions.condition =
             this.createApiResourcesCondition;
 

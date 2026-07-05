@@ -1,38 +1,29 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { memo, useCallback, useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import React, { memo, useCallback, useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AlertCircle, Loader2, Paperclip, SendHorizontal, X } from 'lucide-react';
+
 import {
-    Box,
-    FileDropzone,
-    FileInput,
-    FormField,
-    Icon,
-    Link,
-    PromptInput,
-    SpaceBetween
-} from '@cloudscape-design/components';
-import { useFilesDragging } from '@cloudscape-design/components/file-dropzone';
+    getMultimodalEnabledState,
+    getUseCaseId,
+    getMaxInputTextLength,
+    useConfigStore
+} from '../../../../stores/config-store';
 
-import { getMultimodalEnabledState, getUseCaseId } from '../../../../store/configSlice';
-
-import { FileTokenList } from '../../../../components/multimodal/FileTokenGroup';
 import { useFileUpload } from '../../../../hooks/use-file-upload';
 import { uploadFiles, deleteFiles } from '../../../../services/fileUploadService';
-import { RootState } from '../../../../store/store';
-import { getMaxInputTextLength } from '../../../../store/configSlice';
 import { UploadedFile } from '../../../../types/file-upload';
 import {
-    CHAT_INPUT_MAX_ROWS,
-    CONSTRAINT_TEXT_ERROR_COLOR,
     DEFAULT_CHAT_INPUT_MAX_LENGTH,
     DOCS_LINKS,
     MULTIMODAL_SUPPORTED_IMAGE_FORMATS,
     MULTIMODAL_SUPPORTED_DOCUMENT_FORMATS
 } from '../../../../utils/constants';
-import { validateFile, isFileCountExceeded } from '../../../../utils/file-upload';
+import { validateFile, isFileCountExceeded, formatFileNameForDisplay } from '../../../../utils/file-upload';
 import { formatCharacterCount } from '../../../../utils/validation';
+import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
     isLoading: boolean;
@@ -42,10 +33,7 @@ interface ChatInputProps {
     onSetConversationId?: (conversationId: string) => void;
 }
 
-const FilesDraggingProvider = ({ children }: { children: (areFilesDragging: boolean) => React.ReactNode }) => {
-    const { areFilesDragging } = useFilesDragging();
-    return <>{children(areFilesDragging)}</>;
-};
+const MAX_TEXTAREA_HEIGHT_PX = 200;
 
 export const ChatInput = memo<ChatInputProps>(
     ({
@@ -55,6 +43,7 @@ export const ChatInput = memo<ChatInputProps>(
         conversationId,
         onSetConversationId
     }: ChatInputProps): React.ReactElement => {
+        const { t } = useTranslation();
         const [inputText, setInputText] = useState('');
         const [files, setFiles] = useState<File[]>([]);
         const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -64,15 +53,17 @@ export const ChatInput = memo<ChatInputProps>(
         const [deleteErrors, setDeleteErrors] = useState<Record<string, Error>>({});
         const [messageId, setMessageId] = useState<string>('');
         const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+        const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+        const textareaRef = useRef<HTMLTextAreaElement>(null);
+        const fileInputRef = useRef<HTMLInputElement>(null);
 
         const { generateConversationId, generateMessageId } = useFileUpload();
-        // Selector to determine if user is internal
-        const isInternalUser = useSelector((state: RootState) => state.config.runtimeConfig?.IsInternalUser) === 'true';
+        const isInternalUser = useConfigStore((state) => state.runtimeConfig?.IsInternalUser) === 'true';
+        const isMultimodalEnabled = useConfigStore(getMultimodalEnabledState);
+        const useCaseId = useConfigStore(getUseCaseId);
 
-        const isMultimodalEnabled = useSelector((state: RootState) => getMultimodalEnabledState(state));
-        const useCaseId = useSelector(getUseCaseId);
-
-        const maxInputLength = useSelector((state: RootState) => {
+        const maxInputLength = useConfigStore((state) => {
             try {
                 return getMaxInputTextLength(state);
             } catch {
@@ -80,14 +71,28 @@ export const ChatInput = memo<ChatInputProps>(
             }
         });
 
+        // Auto-grow the textarea with the content
+        useEffect(() => {
+            const textarea = textareaRef.current;
+            if (textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT_PX)}px`;
+            }
+        }, [inputText]);
+
+        // Return focus to the input when a response finishes
+        useEffect(() => {
+            if (!isLoading) {
+                textareaRef.current?.focus();
+            }
+        }, [isLoading]);
+
         const clearObsoleteValidationErrors = useCallback((allFiles: File[]) => {
-            // Only clear errors for files that no longer exist in the file list
             const existingFileNames = new Set(allFiles.map((file) => file.name));
 
             setUploadErrors((prev) => {
                 const newErrors = { ...prev };
                 Object.keys(newErrors).forEach((fileName) => {
-                    // Clear errors for files that have been completely removed
                     if (!existingFileNames.has(fileName)) {
                         delete newErrors[fileName];
                     }
@@ -107,7 +112,6 @@ export const ChatInput = memo<ChatInputProps>(
             async (filesToUpload: File[]) => {
                 let currentConversationId = conversationId;
 
-                // Generate conversation ID if we don't have one and we have files to upload
                 if (!currentConversationId && isMultimodalEnabled && filesToUpload.length > 0) {
                     currentConversationId = generateConversationId();
                     if (onSetConversationId) {
@@ -134,7 +138,6 @@ export const ChatInput = memo<ChatInputProps>(
                 });
 
                 try {
-                    // Use existing messageId or generate a new one for this conversation
                     let currentMessageId = messageId;
                     if (!currentMessageId) {
                         currentMessageId = generateMessageId();
@@ -177,7 +180,6 @@ export const ChatInput = memo<ChatInputProps>(
                             const wasUploaded = result.uploadedFiles.some(
                                 (uploaded) => uploaded.fileName === file.name
                             );
-                            // Keep files that have validation errors
                             const hasValidationError = uploadErrors[file.name];
                             return !wasUploaded || hasValidationError;
                         })
@@ -218,7 +220,8 @@ export const ChatInput = memo<ChatInputProps>(
                 generateConversationId,
                 generateMessageId,
                 messageId,
-                onSetConversationId
+                onSetConversationId,
+                uploadErrors
             ]
         );
 
@@ -236,7 +239,6 @@ export const ChatInput = memo<ChatInputProps>(
                 const invalidFiles: File[] = [];
                 const errors: Record<string, Error> = {};
 
-                // validate individual files
                 uniqueFiles.forEach((file) => {
                     const fileError = validateFile(file);
                     if (fileError) {
@@ -257,7 +259,6 @@ export const ChatInput = memo<ChatInputProps>(
                     const allNewFiles = [...validFiles, ...invalidFiles];
 
                     allNewFiles.forEach((newFile) => {
-                        // Check if file exists in pending uploads
                         const existingFileIndex = updatedFiles.findIndex((file) => file.name === newFile.name);
                         if (existingFileIndex !== -1) {
                             updatedFiles[existingFileIndex] = newFile;
@@ -265,7 +266,6 @@ export const ChatInput = memo<ChatInputProps>(
                             updatedFiles.push(newFile);
                         }
 
-                        // Check if file exists in uploaded files - if so, mark for deletion
                         const existingUploadedIndex = updatedUploadedFiles.findIndex(
                             (file) => file.fileName === newFile.name
                         );
@@ -273,7 +273,6 @@ export const ChatInput = memo<ChatInputProps>(
                             const fileToDelete = updatedUploadedFiles[existingUploadedIndex];
                             if (fileToDelete.messageId) {
                                 filesToDelete.push(fileToDelete.fileName);
-                                // Remove from uploaded files array
                                 updatedUploadedFiles.splice(existingUploadedIndex, 1);
                             }
                         }
@@ -283,23 +282,18 @@ export const ChatInput = memo<ChatInputProps>(
                         }
                     });
 
-                    const existingFiles = [...updatedFiles, ...updatedUploadedFiles.map(createFileFromUploaded)];
-
                     setFiles(updatedFiles);
-                    setUploadedFiles(updatedUploadedFiles);                   
+                    setUploadedFiles(updatedUploadedFiles);
                     setUploadErrors((prev) => ({ ...prev, ...errors }));
 
-                    // Proceed with upload if there are valid files to upload
                     if (isMultimodalEnabled && filesToUpload.length > 0) {
-                        // Generate conversationId if we don't have one yet
                         if (!conversationId && onSetConversationId) {
                             const newConversationId = generateConversationId();
                             onSetConversationId(newConversationId);
                         }
-                        // Delete existing uploaded files with same names first
                         if (filesToDelete.length > 0 && conversationId && messageId && useCaseId) {
                             try {
-                                const deleteResult = await deleteFiles(
+                                await deleteFiles(
                                     filesToDelete,
                                     conversationId,
                                     messageId,
@@ -312,13 +306,6 @@ export const ChatInput = memo<ChatInputProps>(
                                     },
                                     3 // maxRetries for delete operation
                                 );
-
-                                if (deleteResult.allSuccessful) {
-                                    handleFileUpload(filesToUpload);
-                                } else {
-                                    console.warn('Some file deletions failed, proceeding with upload anyway');
-                                    handleFileUpload(filesToUpload);
-                                }
                             } catch (error) {
                                 console.error('Error during file deletion:', error);
                                 filesToDelete.forEach((fileName) => {
@@ -327,8 +314,8 @@ export const ChatInput = memo<ChatInputProps>(
                                         [fileName]: new Error('Delete operation failed')
                                     }));
                                 });
-                                handleFileUpload(filesToUpload);
                             }
+                            handleFileUpload(filesToUpload);
                         } else {
                             handleFileUpload(filesToUpload);
                         }
@@ -346,7 +333,6 @@ export const ChatInput = memo<ChatInputProps>(
                 handleFileUpload,
                 conversationId,
                 onSetConversationId,
-                createFileFromUploaded,
                 messageId,
                 useCaseId,
                 generateConversationId
@@ -370,7 +356,6 @@ export const ChatInput = memo<ChatInputProps>(
                 }))
             ];
 
-            // Separate files with errors from files without errors
             const filesWithErrors = allFiles.filter(
                 (item) => uploadErrors[item.fileName] || deleteErrors[item.fileName]
             );
@@ -406,7 +391,6 @@ export const ChatInput = memo<ChatInputProps>(
                     const allFiles = [...updatedFiles, ...uploadedFiles.map(createFileFromUploaded)];
                     clearObsoleteValidationErrors(allFiles);
                 } else {
-                    // Remove from uploaded files - call delete API with retry logic
                     const fileToDelete = uploadedFiles[itemToRemove.originalIndex];
 
                     if (fileToDelete && conversationId && fileToDelete.messageId && useCaseId) {
@@ -451,7 +435,6 @@ export const ChatInput = memo<ChatInputProps>(
                             setIsDeleting(false);
                         }
                     } else {
-                        // Fallback: just remove from UI if we don't have required info
                         const updatedUploadedFiles = uploadedFiles.filter(
                             (_, index) => index !== itemToRemove.originalIndex
                         );
@@ -467,7 +450,6 @@ export const ChatInput = memo<ChatInputProps>(
                 files,
                 uploadedFiles,
                 conversationId,
-                messageId,
                 useCaseId,
                 clearObsoleteValidationErrors,
                 createFileFromUploaded
@@ -483,184 +465,226 @@ export const ChatInput = memo<ChatInputProps>(
         const fileCountCheck = isFileCountExceeded(allFiles);
         const hasCountError = fileCountCheck.exceeded;
 
-        const handleAction = useCallback(
-            ({ detail }: { detail: { value: string } }) => {
-                if (!detail.value?.trim() || isLoading || isUploading || isDeleting) return;
+        const sendDisabled =
+            !inputText.trim() || isLoading || isUploading || isDeleting || isOverLimit || hasFileErrors || hasCountError;
 
-                if (hasFileErrors || hasCountError) {
-                    return;
+        const handleSend = useCallback(() => {
+            const value = inputText;
+            if (!value.trim() || isLoading || isUploading || isDeleting) return;
+
+            if (hasFileErrors || hasCountError) {
+                return;
+            }
+
+            if (value.length <= maxInputLength) {
+                if (isMultimodalEnabled && uploadedFiles.length > 0 && onSendWithFiles) {
+                    onSendWithFiles(value, uploadedFiles, messageId);
+                } else {
+                    onSend(value);
                 }
+                setInputText('');
+                setMessageId('');
 
-                if (detail.value.length <= maxInputLength) {
-                    if (isMultimodalEnabled && uploadedFiles.length > 0 && onSendWithFiles) {
-                        onSendWithFiles(detail.value, uploadedFiles, messageId);
-                    } else {
-                        onSend(detail.value);
-                    }
-                    setInputText('');
-
-                    // Reset messageId for next message
-                    setMessageId('');
-
-                    if (isMultimodalEnabled) {
-                        setUploadedFiles([]);
-                        setFiles([]);
-                        setUploadErrors({});
-                        setDeleteErrors({});
-                    }
+                if (isMultimodalEnabled) {
+                    setUploadedFiles([]);
+                    setFiles([]);
+                    setUploadErrors({});
+                    setDeleteErrors({});
                 }
-            },
-            [
-                isLoading,
-                isUploading,
-                isDeleting,
-                onSend,
-                onSendWithFiles,
-                maxInputLength,
-                uploadedFiles,
-                isMultimodalEnabled,
-                hasFileErrors,
-                hasCountError
-            ]
-        );
+            }
+        }, [
+            inputText,
+            isLoading,
+            isUploading,
+            isDeleting,
+            onSend,
+            onSendWithFiles,
+            maxInputLength,
+            uploadedFiles,
+            isMultimodalEnabled,
+            hasFileErrors,
+            hasCountError,
+            messageId
+        ]);
+
+        const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                handleSend();
+            }
+        };
+
         const acceptedFormats = [...MULTIMODAL_SUPPORTED_IMAGE_FORMATS, ...MULTIMODAL_SUPPORTED_DOCUMENT_FORMATS]
             .map((format) => `.${format}`)
             .join(',');
 
+        const sendAriaLabel =
+            isLoading || isUploading || isDeleting
+                ? 'Send message button - suppressed'
+                : isOverLimit
+                  ? 'Cannot send - message too long'
+                  : hasFileErrors
+                    ? 'Cannot send - file errors present'
+                    : isMultimodalEnabled && hasFiles
+                      ? `Send message with ${totalFiles} file${totalFiles !== 1 ? 's' : ''}`
+                      : t('composer.send');
+
         return (
-            <FormField
-                stretch
-                constraintText={
-                    <>
-                        <span
-                            style={
-                                { color: isOverLimit ? CONSTRAINT_TEXT_ERROR_COLOR : 'inherit' } as React.CSSProperties
-                            }
-                        >
-                            {characterCount}/{formatCharacterCount(maxInputLength)} characters.{' '}
-                        </span>
-                        {hasCountError && (
-                            <span style={{ color: CONSTRAINT_TEXT_ERROR_COLOR }}>{fileCountCheck.message} </span>
-                        )}
-                        {isMultimodalEnabled && hasFiles && (
-                            <span>
-                                {uploadedFiles.length > 0 &&
-                                    `${uploadedFiles.length} file${uploadedFiles.length !== 1 ? 's' : ''} uploaded.`}{' '}
-                                {isUploading && 'Uploading...'} {isDeleting && 'Deleting...'}{' '}
-                            </span>
-                        )}
-                        {isMultimodalEnabled && <span>Only supports up to 20 images and 5 documents per conversation. See help panel for supported file types. </span>}
-                        {isInternalUser && (
-                            <>
-                                Use of this service is subject to the{' '}
-                                {
-                                    (
-                                        <Link
-                                            href={DOCS_LINKS.GEN_AI_POLICY}
-                                            external
-                                            variant="primary"
-                                            fontSize="inherit"
+            <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+                <div
+                    className={cn(
+                        'rounded-2xl border bg-card shadow-sm transition-colors focus-within:border-ring',
+                        isDraggingOver && 'border-primary bg-accent'
+                    )}
+                    onDragOver={
+                        isMultimodalEnabled
+                            ? (event) => {
+                                  event.preventDefault();
+                                  setIsDraggingOver(true);
+                              }
+                            : undefined
+                    }
+                    onDragLeave={isMultimodalEnabled ? () => setIsDraggingOver(false) : undefined}
+                    onDrop={
+                        isMultimodalEnabled
+                            ? (event) => {
+                                  event.preventDefault();
+                                  setIsDraggingOver(false);
+                                  handleAddFiles(Array.from(event.dataTransfer.files));
+                              }
+                            : undefined
+                    }
+                >
+                    {/* File chips */}
+                    {isMultimodalEnabled && orderedFiles.length > 0 && (
+                        <ul className="flex flex-wrap gap-1.5 px-3 pt-3" data-testid="file-token-list">
+                            {orderedFiles.map((item, index) => {
+                                const error = uploadErrors[item.fileName] || deleteErrors[item.fileName];
+                                const isFileUploading = uploadingFiles.has(item.fileName) && !error;
+                                return (
+                                    <li
+                                        key={`${item.fileName}-${index}`}
+                                        className={cn(
+                                            'inline-flex max-w-56 items-center gap-1 rounded-md border px-2 py-1 text-xs',
+                                            error
+                                                ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                                                : 'bg-muted'
+                                        )}
+                                        title={error ? error.message : item.fileName}
+                                    >
+                                        {isFileUploading && (
+                                            <Loader2 className="size-3 shrink-0 animate-spin" aria-hidden="true" />
+                                        )}
+                                        {error && <AlertCircle className="size-3 shrink-0" aria-hidden="true" />}
+                                        <span className="truncate">{formatFileNameForDisplay(item.fileName)}</span>
+                                        <button
+                                            type="button"
+                                            aria-label={t('composer.removeFile', { fileName: item.fileName })}
+                                            className="rounded-sm p-0.5 hover:bg-background/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                            onClick={() => handleFileDismiss(index)}
                                         >
-                                            Third Party Generative AI Use Policy
-                                        </Link>
-                                    ) as React.ReactElement
-                                }
-                                .
+                                            <X className="size-3" aria-hidden="true" />
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+
+                    <div className="flex items-end gap-1 p-2">
+                        {isMultimodalEnabled && (
+                            <>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept={acceptedFormats}
+                                    className="hidden"
+                                    onChange={(event) => {
+                                        handleAddFiles(Array.from(event.target.files ?? []));
+                                        event.target.value = '';
+                                    }}
+                                    data-testid="file-input"
+                                />
+                                <button
+                                    type="button"
+                                    aria-label={t('composer.attachFiles')}
+                                    className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    data-testid="attach-files-button"
+                                >
+                                    <Paperclip className="size-4" aria-hidden="true" />
+                                </button>
                             </>
                         )}
-                    </>
-                }
-            >
-                <FilesDraggingProvider>
-                    {(areFilesDragging: boolean) => (
-                        <PromptInput
-                            onChange={({ detail }: { detail: { value: string } }) => setInputText(detail.value)}
-                            onAction={handleAction}
+
+                        <textarea
+                            ref={textareaRef}
+                            rows={1}
                             value={inputText}
-                            actionButtonAriaLabel={
-                                isLoading || isUploading || isDeleting
-                                    ? 'Send message button - suppressed'
-                                    : isOverLimit
-                                      ? 'Cannot send - message too long'
-                                      : hasFileErrors
-                                        ? 'Cannot send - file errors present'
-                                        : isMultimodalEnabled && hasFiles
-                                          ? `Send message with ${totalFiles} file${totalFiles !== 1 ? 's' : ''}`
-                                          : 'Send message'
-                            }
-                            actionButtonIconName="send"
-                            ariaLabel={
+                            autoFocus
+                            onChange={(event) => setInputText(event.target.value)}
+                            onKeyDown={handleKeyDown}
+                            aria-label={
                                 isLoading || isUploading || isDeleting
                                     ? 'Chat input text - suppressed'
                                     : 'Chat input text'
                             }
                             placeholder={
-                                isMultimodalEnabled && hasFiles ? 'Ask a question about your files' : 'Ask a question'
+                                isMultimodalEnabled && hasFiles
+                                    ? 'Ask a question about your files'
+                                    : t('composer.placeholder')
                             }
-                            autoFocus
-                            maxRows={CHAT_INPUT_MAX_ROWS}
+                            className="max-h-[200px] min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
                             data-testid="chat-input"
-                            disableSecondaryActionsPaddings
-                            secondaryActions={
-                                isMultimodalEnabled ? (
-                                    <Box padding={{ left: 'xxs', top: 'xs' }}>
-                                        <FileInput
-                                            multiple={true}
-                                            value={[]}
-                                            onChange={({ detail }: { detail: { value: File[] } }) =>
-                                                handleAddFiles(detail.value)
-                                            }
-                                            accept={acceptedFormats}
-                                            ariaLabel="Upload files"
-                                            variant="icon"
-                                        />
-                                    </Box>
-                                ) : undefined
-                            }
-                            secondaryContent={
-                                isMultimodalEnabled ? (
-                                    areFilesDragging ? (
-                                        <FileDropzone
-                                            onChange={({ detail }: { detail: { value: File[] } }) =>
-                                                handleAddFiles(detail.value)
-                                            }
-                                        >
-                                            <SpaceBetween size="xs" alignItems="center">
-                                                <Icon name="upload" />
-                                                <Box>Drop files here</Box>
-                                            </SpaceBetween>
-                                        </FileDropzone>
-                                    ) : (
-                                        (files.length > 0 || uploadedFiles.length > 0) && (
-                                            <FileTokenList
-                                                files={orderedFiles.map((item) => {
-                                                    if (!item.isUploaded) {
-                                                        const fileWithLoading = item.file as File & {
-                                                            loading?: boolean;
-                                                        };
-                                                        const hasError =
-                                                            uploadErrors[item.fileName] || deleteErrors[item.fileName];
-                                                        if (uploadingFiles.has(item.fileName) && !hasError) {
-                                                            fileWithLoading.loading = true;
-                                                        } else {
-                                                            delete fileWithLoading.loading;
-                                                        }
-                                                        return fileWithLoading;
-                                                    }
-                                                    return item.file;
-                                                })}
-                                                onDismiss={handleFileDismiss}
-                                                uploadErrors={uploadErrors}
-                                                deleteErrors={deleteErrors}
-                                            />
-                                        )
-                                    )
-                                ) : undefined
-                            }
                         />
+
+                        <button
+                            type="button"
+                            aria-label={sendAriaLabel}
+                            disabled={sendDisabled}
+                            onClick={handleSend}
+                            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                            data-testid="send-button"
+                        >
+                            {isLoading || isUploading || isDeleting ? (
+                                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                            ) : (
+                                <SendHorizontal className="size-4" aria-hidden="true" />
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Constraint / status text */}
+                <p className="mt-1.5 px-1 text-xs text-muted-foreground">
+                    <span className={cn(isOverLimit && 'text-destructive')}>
+                        {characterCount}/{formatCharacterCount(maxInputLength)} characters.{' '}
+                    </span>
+                    {hasCountError && <span className="text-destructive">{fileCountCheck.message} </span>}
+                    {isMultimodalEnabled && hasFiles && (
+                        <span>
+                            {uploadedFiles.length > 0 &&
+                                `${uploadedFiles.length} file${uploadedFiles.length !== 1 ? 's' : ''} uploaded.`}{' '}
+                            {isUploading && 'Uploading...'} {isDeleting && 'Deleting...'}{' '}
+                        </span>
                     )}
-                </FilesDraggingProvider>
-            </FormField>
+                    {isInternalUser && (
+                        <>
+                            Use of this service is subject to the{' '}
+                            <a
+                                href={DOCS_LINKS.GEN_AI_POLICY}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary underline underline-offset-2"
+                            >
+                                Third Party Generative AI Use Policy
+                            </a>
+                            .
+                        </>
+                    )}
+                </p>
+            </div>
         );
     }
 );

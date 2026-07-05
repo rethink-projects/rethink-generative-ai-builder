@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useState, useEffect } from 'react';
-import { Icon } from '@cloudscape-design/components';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ThinkingMetadata } from '../../pages/chat/types';
 import { ExpandableContent } from './ExpandableContent';
 import './ThinkingIndicator.scss';
@@ -87,10 +87,7 @@ export function ThinkingIndicator({ thinking, 'data-testid': dataTestId = 'think
                         {displayText} <span className="thinking-indicator__duration" data-testid="thinking-duration">{formattedDuration}</span>
                     </span>
                     {hasContent && (
-                        <Icon
-                            name={isExpanded ? 'caret-up-filled' : 'caret-down-filled'}
-                            size="small"
-                        />
+                        isExpanded ? <ChevronUp className="size-3.5" aria-hidden="true" /> : <ChevronDown className="size-3.5" aria-hidden="true" />
                     )}
                 </button>
             </div>

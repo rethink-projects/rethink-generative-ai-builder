@@ -109,7 +109,7 @@ describe('AppRoutes', () => {
                     path="*"
                     element={
                         <div data-testid="error-page">
-                            <p>The requested page could not be found 😿</p>
+                            <p>The requested page could not be found.</p>
                         </div>
                     }
                 />
@@ -119,7 +119,7 @@ describe('AppRoutes', () => {
         const errorPage = screen.getByTestId('error-page');
         expect(errorPage).toBeInTheDocument();
         expect(errorPage.querySelector('h1')).toBeNull();
-        expect(errorPage.textContent).toContain('The requested page could not be found 😿');
+        expect(errorPage.textContent).toContain('The requested page could not be found.');
     });
 
     it('should render error page with title for invalid public routes', () => {
@@ -128,6 +128,6 @@ describe('AppRoutes', () => {
         const errorPage = screen.getByTestId('error-page');
         expect(errorPage).toBeInTheDocument();
         expect(errorPage.textContent).toContain('Page Not Found');
-        expect(errorPage.textContent).toContain('The requested page could not be found 😿');
+        expect(errorPage.textContent).toContain('The requested page could not be found.');
     });
 });

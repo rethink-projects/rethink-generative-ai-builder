@@ -2,19 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
 import { OutgoingMessageProps } from './types';
-import { ChatBubble } from '@cloudscape-design/chat-components';
-import { ChatBubbleAvatar } from '../../../../components/common/common-components';
 import MarkdownContent from '../../../../components/markdown/MarkdownContent';
 import { FileDisplay } from '../../../../components/multimodal/FileDisplay';
-import '../../styles/OutgoingMessage.scss';
+import { cn } from '@/lib/utils';
 
-const ChevronIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 11L3 6h10l-5 5z" />
-    </svg>
-);
-
+/**
+ * User message: right-aligned bubble with optional attachments and a
+ * show more/less control for very long content.
+ */
 export const OutgoingMessage = ({
     message,
     author,
@@ -22,6 +20,7 @@ export const OutgoingMessage = ({
     'data-testid': dataTestId,
     previewHeight = 200
 }: OutgoingMessageProps) => {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
     const contentRef = useRef<HTMLDivElement>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
@@ -34,46 +33,47 @@ export const OutgoingMessage = ({
     }, [content, previewHeight]);
 
     return (
-        <ChatBubble
-            key={message.authorId + message.timestamp}
-            avatar={<ChatBubbleAvatar {...author} loading={message.avatarLoading} />}
-            ariaLabel={`${author.name} at ${message.timestamp}`}
-            type="outgoing"
-            hideAvatar={message.hideAvatar}
-            showLoadingBar={message.avatarLoading}
+        <div
+            className="flex justify-end"
             data-testid={dataTestId}
+            aria-label={`${author.name} at ${message.timestamp}`}
         >
-            {message.files && message.files.length > 0 && <FileDisplay files={message.files} hasError={hasFileError} />}
-            <div
-                className="outgoing-message__content-wrapper"
-                style={{
-                    maxHeight: isExpanded ? 'none' : `${previewHeight}px`
-                }}
-            >
-                <div ref={contentRef}>
-                    <MarkdownContent content={content} />
-                </div>
-
-                {isOverflowing && !isExpanded && (
-                    <>
-                        <div className="outgoing-message__gradient-overlay" />
-                        <div className="outgoing-message__action-button" onClick={() => setIsExpanded(true)}>
-                            <span>Show more</span>
-                            <ChevronIcon className="outgoing-message__action-button-icon" />
-                        </div>
-                    </>
+            <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-chat-user-bubble px-4 py-2.5 text-chat-user-bubble-foreground">
+                {message.files && message.files.length > 0 && (
+                    <FileDisplay files={message.files} hasError={hasFileError} />
                 )}
+                <div
+                    className="relative overflow-hidden"
+                    style={{ maxHeight: isExpanded ? 'none' : `${previewHeight}px` }}
+                >
+                    <div ref={contentRef}>
+                        <MarkdownContent content={content} />
+                    </div>
 
+                    {isOverflowing && !isExpanded && (
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-chat-user-bubble to-transparent pt-8">
+                            <button
+                                type="button"
+                                className="flex w-full items-center justify-center gap-1 text-xs font-medium hover:underline"
+                                onClick={() => setIsExpanded(true)}
+                            >
+                                {t('messages.showMore')}
+                                <ChevronDown className="size-3" aria-hidden="true" />
+                            </button>
+                        </div>
+                    )}
+                </div>
                 {isOverflowing && isExpanded && (
-                    <div
-                        className="outgoing-message__action-button outgoing-message__action-button--expanded"
+                    <button
+                        type="button"
+                        className="mt-1 flex items-center gap-1 text-xs font-medium hover:underline"
                         onClick={() => setIsExpanded(false)}
                     >
-                        <span>Show less</span>
-                        <ChevronIcon className="outgoing-message__action-button-icon outgoing-message__action-button-icon--rotated" />
-                    </div>
+                        {t('messages.showLess')}
+                        <ChevronDown className={cn('size-3 rotate-180')} aria-hidden="true" />
+                    </button>
                 )}
             </div>
-        </ChatBubble>
+        </div>
     );
 };

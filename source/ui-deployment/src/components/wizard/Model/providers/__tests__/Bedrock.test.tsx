@@ -120,7 +120,7 @@ describe('Bedrock', () => {
         );
 
         expect(screen.getByTestId('model-id-input')).toBeDefined();
-        const modelIdInput = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const modelIdInput = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         expect(modelIdInput?.getInputValue()).toBe('custom-model-id');
     });
 
@@ -138,7 +138,7 @@ describe('Bedrock', () => {
         );
 
         expect(screen.getByTestId('inference-profile-id-input')).toBeDefined();
-        const profileIdInput = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const profileIdInput = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         expect(profileIdInput?.getInputValue()).toBe('profile-123');
     });
 

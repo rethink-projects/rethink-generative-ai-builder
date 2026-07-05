@@ -2,5 +2,90 @@
   "sidenav": {
     "chatOption": "Chat",
     "header": "Chat"
+  },
+  "sidebar": {
+    "newConversation": "New conversation",
+    "recentConversations": "Recent conversations",
+    "emptyConversations": "Your conversations will appear here.",
+    "conversationsUnavailable": "History is not available for this assistant.",
+    "loadingConversations": "Loading conversations...",
+    "openSidebar": "Open sidebar",
+    "closeSidebar": "Close sidebar"
+  },
+  "header": {
+    "settings": "Settings",
+    "darkMode": "Switch to dark theme",
+    "lightMode": "Switch to light theme",
+    "signOut": "Sign out",
+    "userMenu": "User menu"
+  },
+  "welcome": {
+    "title": "Hello! How can I help you today?",
+    "subtitle": "Ask me anything: I will answer using the knowledge configured for this assistant.",
+    "suggestionsLabel": "Suggestions to get started",
+    "suggestion1": "What can you help me with?",
+    "suggestion2": "Summarize the key points of a topic for me",
+    "suggestion3": "Explain a concept in simple words",
+    "suggestion4": "Help me draft a short message"
+  },
+  "composer": {
+    "placeholder": "Ask a question...",
+    "send": "Send message",
+    "generating": "Generating answer...",
+    "charactersRemaining": "{{count}} characters remaining",
+    "overLimit": "Message is too long by {{count}} characters",
+    "attachFiles": "Attach files",
+    "removeFile": "Remove file {{fileName}}"
+  },
+  "messages": {
+    "assistantName": "Assistant",
+    "you": "You",
+    "copy": "Copy",
+    "copied": "Message copied",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "feedbackThanks": "Thank you for your feedback!",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "sources": "Sources",
+    "responseComplete": "Response complete",
+    "thinking": "Thinking...",
+    "toolsUsed": "Tools used"
+  },
+  "feedbackForm": {
+    "title": "Tell us more",
+    "commentLabel": "Additional comments (optional)",
+    "reasonsLabel": "What was the issue?",
+    "submit": "Submit",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "advanced": "Advanced: system prompt",
+    "advancedDescription": "The system prompt guides how the assistant answers. Only change it if you know what you are doing.",
+    "promptTemplateLabel": "System prompt",
+    "reset": "Restore default",
+    "save": "Save",
+    "promptSaved": "System prompt saved"
+  },
+  "connection": {
+    "connecting": "Connecting...",
+    "reconnecting": "Connection lost. Trying to reconnect...",
+    "failed": "Could not connect. Check your network and reload the page."
+  },
+  "loading": {
+    "fetchingConfig": "Loading assistant...",
+    "error": "Something went wrong while loading. Please reload the page."
+  },
+  "errors": {
+    "pageNotFound": "Page not found",
+    "pageNotFoundMessage": "The page you are looking for does not exist."
+  },
+  "common": {
+    "skipToContent": "Skip to main content"
   }
 }

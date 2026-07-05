@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { ApiEndpoints } from '../store/solutionApi.ts';
+import { ApiEndpoints } from '../hooks/queries.ts';
 import { delay, http, HttpResponse } from 'msw';
 
 /**
@@ -89,6 +89,40 @@ export const fileDeleteHandler = (apiUrl: string) =>
         });
     });
 
+export const listConversationsHandler = (apiUrl: string) =>
+    http.get(`${apiUrl}${ApiEndpoints.CONVERSATIONS}/:useCaseConfigKey`, async () => {
+        return ok({
+            conversations: [
+                {
+                    conversationId: 'mock-conversation-1',
+                    title: 'What is GAAB?',
+                    expiresAt: Math.floor(Date.now() / 1000) + 3600
+                },
+                {
+                    conversationId: 'mock-conversation-2',
+                    title: 'Help me summarize a document',
+                    expiresAt: Math.floor(Date.now() / 1000) + 1800
+                }
+            ]
+        });
+    });
+
+export const getConversationDetailsHandler = (apiUrl: string) =>
+    http.get(`${apiUrl}${ApiEndpoints.CONVERSATIONS}/:useCaseConfigKey/:conversationId`, async ({ params }) => {
+        const { conversationId } = params;
+        return ok({
+            conversationId,
+            messages: [
+                { messageId: 'mock-message-1', type: 'human', content: 'What is GAAB?' },
+                {
+                    messageId: 'mock-message-2',
+                    type: 'ai',
+                    content: 'GAAB is the Generative AI Application Builder on AWS.'
+                }
+            ]
+        });
+    });
+
 export const mockS3UploadHandler = () =>
     http.post('https://*.s3.amazonaws.com/*', async () => {
         // Simulate successful S3 upload
@@ -103,5 +137,7 @@ export const handlers = (apiUrl: string) => [
     getDeploymentHandler(apiUrl),
     fileUploadHandler(apiUrl),
     fileDeleteHandler(apiUrl),
+    listConversationsHandler(apiUrl),
+    getConversationDetailsHandler(apiUrl),
     mockS3UploadHandler()
 ];

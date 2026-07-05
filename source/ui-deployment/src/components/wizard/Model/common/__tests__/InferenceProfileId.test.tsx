@@ -19,7 +19,7 @@ describe('InferenceProfileIdInput', () => {
             <InferenceProfileId modelData={mockModelData} {...mockFormComponentCallbacks()} />
         );
         expect(screen.getByTestId('inference-profile-id-input')).toBeDefined();
-        expect(cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]')?.getInputValue()).toEqual(
+        expect(cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]')?.getInputValue()).toEqual(
             'fake-id'
         );
     });
@@ -31,7 +31,7 @@ describe('InferenceProfileIdInput', () => {
         const { cloudscapeWrapper } = cloudscapeRender(
             <InferenceProfileId modelData={mockModelData} {...mockFormComponentCallbacks()} />
         );
-        expect(cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]')?.getInputValue()).toEqual('');
+        expect(cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]')?.getInputValue()).toEqual('');
     });
 
     test('calls onChange when input value changes', () => {
@@ -41,7 +41,7 @@ describe('InferenceProfileIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<InferenceProfileId modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         input?.setInputValue('new-profile-id');
 
         expect(callbacks.onChangeFn).toHaveBeenCalledWith({ inferenceProfileId: 'new-profile-id' });
@@ -54,7 +54,7 @@ describe('InferenceProfileIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<InferenceProfileId modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         input?.setInputValue('');
 
         const formField = cloudscapeWrapper.findFormField('[data-testid="inference-profile-id-field"]');
@@ -69,7 +69,7 @@ describe('InferenceProfileIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<InferenceProfileId modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         input?.setInputValue('invalid@id');
 
         const formField = cloudscapeWrapper.findFormField('[data-testid="inference-profile-id-field"]');
@@ -85,7 +85,7 @@ describe('InferenceProfileIdInput', () => {
         const { cloudscapeWrapper } = cloudscapeRender(<InferenceProfileId modelData={mockModelData} {...callbacks} />);
 
         // First make it invalid
-        const input = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         input?.setInputValue('');
 
         // Verify error is shown
@@ -150,7 +150,7 @@ describe('InferenceProfileIdInput', () => {
         expect(formField?.findError()?.getElement()).toHaveTextContent('Custom error');
 
         // Change the input to trigger the error setter
-        const input = cloudscapeWrapper.findInput('[data-testid="inference-profile-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="inference-profile-id-input"]');
         input?.setInputValue('new-value');
 
         expect(setInferenceProfileIdError).toHaveBeenCalled();

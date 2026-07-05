@@ -2,5 +2,90 @@
   "sidenav": {
     "chatOption": "Discussion",
     "header": "Discussion"
+  },
+  "sidebar": {
+    "newConversation": "Nouvelle conversation",
+    "recentConversations": "Conversations récentes",
+    "emptyConversations": "Vos conversations apparaîtront ici.",
+    "conversationsUnavailable": "L'historique n'est pas disponible pour cet assistant.",
+    "loadingConversations": "Chargement des conversations...",
+    "openSidebar": "Ouvrir le menu latéral",
+    "closeSidebar": "Fermer le menu latéral"
+  },
+  "header": {
+    "settings": "Paramètres",
+    "darkMode": "Passer au thème sombre",
+    "lightMode": "Passer au thème clair",
+    "signOut": "Se déconnecter",
+    "userMenu": "Menu utilisateur"
+  },
+  "welcome": {
+    "title": "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
+    "subtitle": "Posez-moi vos questions : je répondrai avec les connaissances configurées pour cet assistant.",
+    "suggestionsLabel": "Suggestions pour commencer",
+    "suggestion1": "Avec quoi pouvez-vous m'aider ?",
+    "suggestion2": "Résumez les points clés d'un sujet",
+    "suggestion3": "Expliquez un concept avec des mots simples",
+    "suggestion4": "Aidez-moi à rédiger un court message"
+  },
+  "composer": {
+    "placeholder": "Posez une question...",
+    "send": "Envoyer le message",
+    "generating": "Génération de la réponse...",
+    "charactersRemaining": "{{count}} caractères restants",
+    "overLimit": "Le message dépasse la limite de {{count}} caractères",
+    "attachFiles": "Joindre des fichiers",
+    "removeFile": "Supprimer le fichier {{fileName}}"
+  },
+  "messages": {
+    "assistantName": "Assistant",
+    "you": "Vous",
+    "copy": "Copier",
+    "copied": "Message copié",
+    "helpful": "Utile",
+    "notHelpful": "Pas utile",
+    "feedbackThanks": "Merci pour votre retour !",
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins",
+    "sources": "Sources",
+    "responseComplete": "Réponse terminée",
+    "thinking": "Réflexion...",
+    "toolsUsed": "Outils utilisés"
+  },
+  "feedbackForm": {
+    "title": "Dites-nous en plus",
+    "commentLabel": "Commentaires supplémentaires (facultatif)",
+    "reasonsLabel": "Quel était le problème ?",
+    "submit": "Envoyer",
+    "cancel": "Annuler"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "language": "Langue",
+    "advanced": "Avancé : prompt système",
+    "advancedDescription": "Le prompt système guide la manière dont l'assistant répond. Ne le modifiez que si vous savez ce que vous faites.",
+    "promptTemplateLabel": "Prompt système",
+    "reset": "Restaurer la valeur par défaut",
+    "save": "Enregistrer",
+    "promptSaved": "Prompt système enregistré"
+  },
+  "connection": {
+    "connecting": "Connexion...",
+    "reconnecting": "Connexion perdue. Nouvelle tentative...",
+    "failed": "Connexion impossible. Vérifiez votre réseau et rechargez la page."
+  },
+  "loading": {
+    "fetchingConfig": "Chargement de l'assistant...",
+    "error": "Une erreur s'est produite lors du chargement. Rechargez la page."
+  },
+  "errors": {
+    "pageNotFound": "Page introuvable",
+    "pageNotFoundMessage": "La page que vous recherchez n'existe pas."
+  },
+  "common": {
+    "skipToContent": "Aller au contenu principal"
   }
 }

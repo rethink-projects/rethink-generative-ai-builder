@@ -2,25 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
 import { useFeedback } from '../../hooks/use-feedback';
 import { ChatBubbleMessage } from '../../pages/chat/types';
 import { act, renderHook } from '@testing-library/react';
 import React from 'react';
+import { useConfigStore } from '../../stores/config-store';
+import { RuntimeConfig } from '../../models';
 
-// Mock the Redux store
-const mockStore = configureStore({
-    reducer: {
-        config: (state = { runtimeConfig: { UseCaseId: 'test-use-case-id', UseCaseConfigKey: 'test-use-case-key' } }) =>
-            state
-    }
-});
-
-// Mock the API slice
+// Mock the feedback mutation from the TanStack Query layer
 const mockSubmitFeedback = vi.fn();
-vi.mock('../../store/solutionApi', () => ({
-    useSubmitFeedbackMutation: () => [mockSubmitFeedback, { isLoading: false }]
+vi.mock('../../hooks/queries', () => ({
+    useSubmitFeedbackMutation: () => ({ mutateAsync: mockSubmitFeedback, isPending: false })
 }));
 
 describe('useFeedback hook', () => {
@@ -73,14 +65,15 @@ describe('useFeedback hook', () => {
 
     const mockOnFeedback = vi.fn();
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => <Provider store={mockStore}>{children}</Provider>;
+    const wrapper = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        // Set up the default success response
-        mockSubmitFeedback.mockReturnValue({
-            unwrap: () => Promise.resolve({ success: true })
+        useConfigStore.setState({
+            runtimeConfig: { UseCaseId: 'test-use-case-id', UseCaseConfigKey: 'test-use-case-key' } as RuntimeConfig
         });
+        // Set up the default success response
+        mockSubmitFeedback.mockResolvedValue({ success: true });
     });
 
     it('should initialize with default values', () => {
@@ -130,9 +123,7 @@ describe('useFeedback hook', () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         // Override the mock for this specific test
-        mockSubmitFeedback.mockReturnValue({
-            unwrap: () => Promise.reject(new Error('API Error'))
-        });
+        mockSubmitFeedback.mockRejectedValue(new Error('API Error'));
 
         const { result } = renderHook(() => useFeedback(mockMessage, 'fake-id'), { wrapper });
 
@@ -148,7 +139,7 @@ describe('useFeedback hook', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Error submitting feedback:', expect.any(Error));
         expect(result.current.showFeedbackForm).toBe(false);
         expect(result.current.feedbackSubmitted).toBe(false);
-        expect(result.current.feedbackError).toBe("Failed to submit feedback. Please try again or contact a system administrator.");
+        expect(result.current.feedbackError).toBe('API Error');
 
         consoleErrorSpy.mockRestore();
     });

@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { memo, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
 import { ReadyState } from 'react-use-websocket';
-import { addNotification, deleteNotification } from '../../../../store/notificationsSlice';
+import { useNotificationsStore } from '../../../../stores/notifications-store';
 
 /**
  * Enum representing different types of connection errors that can occur
@@ -71,15 +70,15 @@ const statusMessages = {
  * @returns null - This is a purely logical component with no UI
  */
 export const ConnectionStatus = memo(({ connectionState, successMessageDuration = 2000 }: ConnectionStatusProps) => {
-    const dispatch = useDispatch();
+    const addNotification = useNotificationsStore((state) => state.addNotification);
+    const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
     const { socketStatus, error } = connectionState;
 
     useEffect(() => {
         if (error) {
             const errorNotificationId = NOTIFICATION_IDS[error.type as ConnectionErrorType];
 
-            dispatch(
-                addNotification({
+            addNotification(({
                     id: errorNotificationId,
                     header: 'Connection Error',
                     content: errorMessages[error.type] || error.message,
@@ -94,8 +93,7 @@ export const ConnectionStatus = memo(({ connectionState, successMessageDuration 
                       ? 'info'
                       : 'warning';
 
-            dispatch(
-                addNotification({
+            addNotification(({
                     id: NOTIFICATION_IDS.CONNECTION_STATUS,
                     header: 'Connection Status',
                     content: statusMessages[socketStatus],
@@ -106,7 +104,7 @@ export const ConnectionStatus = memo(({ connectionState, successMessageDuration 
             // Auto-dismiss success messages
             if (socketStatus === ReadyState.OPEN) {
                 const timeoutId = setTimeout(() => {
-                    dispatch(deleteNotification({ id: NOTIFICATION_IDS.CONNECTION_STATUS }));
+                    deleteNotification(NOTIFICATION_IDS.CONNECTION_STATUS);
                 }, successMessageDuration);
                 return () => clearTimeout(timeoutId);
             }
@@ -115,10 +113,10 @@ export const ConnectionStatus = memo(({ connectionState, successMessageDuration 
         // Cleanup function
         return () => {
             Object.values(NOTIFICATION_IDS).forEach((id) => {
-                dispatch(deleteNotification({ id }));
+                deleteNotification(id);
             });
         };
-    }, [socketStatus, error, dispatch, successMessageDuration]);
+    }, [socketStatus, error, addNotification, deleteNotification, successMessageDuration]);
 
     return null;
 });

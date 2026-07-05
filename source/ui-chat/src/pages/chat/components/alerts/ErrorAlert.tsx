@@ -1,18 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import Alert from '@cloudscape-design/components/alert';
-import { Box, CopyToClipboard, SpaceBetween } from '@cloudscape-design/components';
+import { useState } from 'react';
+import { AlertCircle, Check, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { TraceDetails } from '../../../../utils/validation';
 
-/**
- * Props interface for the ErrorAlert component
- * @interface ErrorAlertProps
- * @property {number} index - Unique index for the alert
- * @property {string} [header] - Optional header text for the alert
- * @property {TraceDetails} errorMessage - Object containing trace error details
- * @property {function} formatTraceDetailsForCopy - Function to format trace details for clipboard
- */
 interface ErrorAlertProps {
     index: number;
     header?: string;
@@ -21,36 +14,44 @@ interface ErrorAlertProps {
 }
 
 /**
- * Component that displays error information in an alert format with trace details
- * @param {ErrorAlertProps} props - Component props
- * @param {number} props.index - Unique index for the alert
- * @param {string} [props.header] - Optional header text for the alert
- * @param {TraceDetails} props.errorMessage - Object containing trace error details
- * @param {function} props.formatTraceDetailsForCopy - Function to format trace details for clipboard
- * @returns {JSX.Element} Alert component with error details and copy functionality
+ * Displays a chat error with its X-Ray trace details and a copy action.
  */
 export const ErrorAlert = ({ index, header, errorMessage, formatTraceDetailsForCopy }: ErrorAlertProps) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(formatTraceDetailsForCopy(errorMessage));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            console.error('Failed to copy trace id:', error);
+        }
+    };
+
     return (
-        <Alert key={'error-alert' + index} header={header} type="error" data-testid={'error-alert' + index}>
-            <SpaceBetween size="xs">
-                <Box variant="p" key="error-message">
-                    {errorMessage.message}
-                </Box>
-
-                <Box variant="code" key="error-details">
-                    Root ID: {errorMessage.rootId}
-                    {errorMessage.parentId && `\nParent ID: ${errorMessage.parentId}`}
-                    {errorMessage.lineage && `\nLineage: ${errorMessage.lineage}`}
-                    {`\nSampled: ${errorMessage.sampled ? 'Yes' : 'No'}`}
-                </Box>
-
-                <CopyToClipboard
-                    copyButtonText="Copy Trace Id"
-                    copyErrorText="Failed to copy trace Id"
-                    copySuccessText="Trace ID copied"
-                    textToCopy={formatTraceDetailsForCopy(errorMessage)}
-                />
-            </SpaceBetween>
-        </Alert>
+        <div
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm"
+            data-testid={'error-alert' + index}
+        >
+            <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                <div className="min-w-0 flex-1 space-y-2">
+                    {header && <p className="font-medium text-destructive">{header}</p>}
+                    <p>{errorMessage.message}</p>
+                    <pre className="overflow-x-auto rounded bg-muted p-2 text-xs text-muted-foreground">
+                        Root ID: {errorMessage.rootId}
+                        {errorMessage.parentId && `\nParent ID: ${errorMessage.parentId}`}
+                        {errorMessage.lineage && `\nLineage: ${errorMessage.lineage}`}
+                        {`\nSampled: ${errorMessage.sampled ? 'Yes' : 'No'}`}
+                    </pre>
+                    <Button variant="outline" size="sm" onClick={handleCopy}>
+                        {copied ? <Check /> : <Copy />}
+                        {copied ? 'Trace ID copied' : 'Copy Trace Id'}
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 };

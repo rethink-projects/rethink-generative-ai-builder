@@ -1,0 +1,149 @@
+/* Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Rethink brand tokens (placeholder values pending official brand guide).
+ * Lime green is the brand primary; on light backgrounds it fails WCAG contrast,
+ * so light mode uses a darkened lime for interactive elements and reserves the
+ * bright lime for the dark theme, where it meets >= 4.5:1 against the surface.
+ */
+:root {
+    --background: #fafaf7;
+    --foreground: #191b14;
+    --card: #ffffff;
+    --card-foreground: #191b14;
+    --popover: #ffffff;
+    --popover-foreground: #191b14;
+    --primary: #3f6212;
+    --primary-foreground: #f7fee7;
+    --secondary: #eef0e6;
+    --secondary-foreground: #2b2e21;
+    --muted: #f1f2ea;
+    --muted-foreground: #5c6152;
+    --accent: #ecfccb;
+    --accent-foreground: #365314;
+    --destructive: #b91c1c;
+    --destructive-foreground: #fef2f2;
+    --border: #e2e4d9;
+    --input: #d5d8ca;
+    --ring: #84cc16;
+    --brand-lime: #c6f542;
+    --sidebar: #f2f3ec;
+    --sidebar-foreground: #2b2e21;
+    --sidebar-accent: #e5e8da;
+    --chat-user-bubble: #e7f5c8;
+    --chat-user-bubble-foreground: #263312;
+}
+
+.dark {
+    --background: #0e0f0c;
+    --foreground: #f2f4ec;
+    --card: #16180f;
+    --card-foreground: #f2f4ec;
+    --popover: #1b1e13;
+    --popover-foreground: #f2f4ec;
+    --primary: #c6f542;
+    --primary-foreground: #1a2405;
+    --secondary: #23261a;
+    --secondary-foreground: #e3e7d5;
+    --muted: #1e2116;
+    --muted-foreground: #a3a894;
+    --accent: #2a2f1c;
+    --accent-foreground: #d9f99d;
+    --destructive: #ef4444;
+    --destructive-foreground: #fef2f2;
+    --border: #2b2e21;
+    --input: #34382a;
+    --ring: #a3e635;
+    --brand-lime: #c6f542;
+    --sidebar: #121408;
+    --sidebar-foreground: #e3e7d5;
+    --sidebar-accent: #23261a;
+    --chat-user-bubble: #2b331a;
+    --chat-user-bubble-foreground: #e9f7cd;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-brand-lime: var(--brand-lime);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-chat-user-bubble: var(--chat-user-bubble);
+    --color-chat-user-bubble-foreground: var(--chat-user-bubble-foreground);
+    --font-sans:
+        'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --radius-lg: 0.75rem;
+    --radius-md: 0.5rem;
+    --radius-sm: 0.375rem;
+}
+
+@layer base {
+    * {
+        border-color: var(--color-border);
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+    }
+
+    body {
+        background-color: var(--color-background);
+        color: var(--color-foreground);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/* Visually hidden skip link that becomes visible on keyboard focus */
+.skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: 0.5rem;
+    z-index: 100;
+    transform: translateY(-200%);
+    transition: transform 0.15s ease;
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}

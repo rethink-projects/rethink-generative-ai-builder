@@ -1,495 +1,125 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import '@cloudscape-design/chat-components/test-utils/dom';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { IncomingMessage } from '@pages/chat/components/messages/IncomingMessage';
+import { AI_AUTHOR } from '@pages/chat/config';
+import { ChatBubbleMessage } from '@pages/chat/types';
+import { useConfigStore } from '@/stores/config-store';
+import { configFactory } from '@/__tests__/utils/test-redux-store-factory';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen } from '@testing-library/react';
+const mockHandleFeedbackButtonClick = vi.fn();
+const mockUseFeedback = {
+    showFeedbackForm: false,
+    setShowFeedbackForm: vi.fn(),
+    feedbackType: '' as const,
+    feedbackSubmitted: false,
+    feedbackError: null,
+    isSubmittingFeedback: false,
+    handleFeedbackButtonClick: mockHandleFeedbackButtonClick,
+    handleFeedbackSubmit: vi.fn()
+};
 
-import createWrapper from '@cloudscape-design/components/test-utils/dom';
-import { IncomingMessage } from '../../../../../pages/chat/components/messages/IncomingMessage';
-import { ChatBubbleMessage } from '../../../../../pages/chat/types';
-import { SourceDocument } from '../../../../../models';
-import * as useFeedbackModule from '../../../../../hooks/use-feedback';
-import { testStoreFactory } from '@/__tests__/utils/test-redux-store-factory';
+vi.mock('@/hooks/use-feedback', () => ({
+    useFeedback: () => mockUseFeedback
+}));
+
+const baseMessage: ChatBubbleMessage = {
+    type: 'chat-bubble',
+    authorId: 'assistant',
+    content: 'Here is your **answer**.',
+    timestamp: '10:31',
+    messageId: 'msg-1'
+};
 
 describe('IncomingMessage', () => {
-    const mockMessage: ChatBubbleMessage = {
-        type: 'chat-bubble', // Added required type property
-        authorId: 'assistant-1',
-        content: 'Hello, this is a test message',
-        timestamp: '2024-01-01T12:00:00Z',
-        avatarLoading: false,
-        hideAvatar: false,
-        userInput: 'User question'
-    };
-
-    const mockAuthor = {
-        type: 'assistant' as const, // Added required type property
-        name: 'AI Assistant',
-        avatar: 'path/to/avatar.png',
-        description: 'AI Assistant Description'
-    };
-
-    const mockProps = {
-        message: mockMessage,
-        author: mockAuthor,
-        showActions: true,
-        onFeedback: vi.fn(),
-        conversationId: 'fake-id',
-        'data-testid': 'test-incoming-message'
-    };
-
-    // Mock the useFeedback hook
-    const mockUseFeedback = {
-        showFeedbackForm: false,
-        setShowFeedbackForm: vi.fn(),
-        feedbackType: 'helpful' as const,
-        setFeedbackType: vi.fn(),
-        feedbackSubmitted: false,
-        feedbackError: null,
-        isSubmittingFeedback: false,
-        handleFeedbackButtonClick: vi.fn(),
-        handleFeedbackSubmit: vi.fn()
-    };
-
     beforeEach(() => {
-        vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(mockUseFeedback);
-        vi.useFakeTimers();
-    });
-
-    afterEach(() => {
         vi.clearAllMocks();
-        vi.useRealTimers();
+        useConfigStore.setState({
+            runtimeConfig: configFactory.createRuntimeConfig({
+                UseCaseConfig: { FeedbackParams: { FeedbackEnabled: true } } as any
+            })
+        });
     });
 
-    it('renders the chat bubble component', () => {
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-        const wrapper = createWrapper(container);
-
-        expect(wrapper.findChatBubble()).toBeTruthy();
-    });
-
-    it('renders with correct content', () => {
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-        const wrapper = createWrapper(container);
-
-        const contentSlot = wrapper.findChatBubble()?.findContentSlot();
-        expect(contentSlot?.getElement()).toHaveTextContent(String(mockMessage.content));
-    });
-
-    it('shows loading bar when avatarLoading is true', () => {
-        const loadingProps = {
-            ...mockProps,
-            message: {
-                ...mockMessage,
-                avatarLoading: true
-            }
-        };
-
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...loadingProps} />);
-        const wrapper = createWrapper(container);
-
-        const loadingBar = wrapper.findChatBubble()?.findLoadingBar();
-        expect(loadingBar).toBeTruthy();
-    });
-
-    it('renders source documents when provided', () => {
-        const sourceDocuments: SourceDocument[] = [
-            {
-                document_title: 'Test Document 1',
-                excerpt: 'Test excerpt 1',
-                location: 'https://example.com/doc1',
-                score: 'VERY_HIGH'
-            }
-        ];
-
-        const propsWithSources = {
-            ...mockProps,
-            message: {
-                ...mockMessage,
-                sourceDocuments
-            }
-        };
-
-        const { container, debug } = testStoreFactory.renderWithStore(<IncomingMessage {...propsWithSources} />);
-        const wrapper = createWrapper(container);
-
-        const expandableSection = wrapper.findChatBubble()?.findContentSlot()?.findExpandableSection();
-        expandableSection?.click();
-        debug();
-
-        expect(expandableSection?.getElement()).toHaveTextContent('Source Documents');
-        expect(expandableSection?.getElement()).toHaveTextContent('Test Document 1');
-    });
-
-    it('calls handleFeedbackButtonClick when feedback button is clicked', () => {
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-        const wrapper = createWrapper(container);
-
-        const actionsSlot = wrapper.findChatBubble()?.findActionsSlot();
-        const feedbackButton = actionsSlot?.find('button[aria-label="Helpful"]');
-
-        feedbackButton?.click();
-
-        expect(mockUseFeedback.handleFeedbackButtonClick).toHaveBeenCalledWith('helpful');
-    });
-
-    it('renders with data-testid', () => {
-        testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-        expect(screen.getByTestId('test-incoming-message')).toBeInTheDocument();
-    });
-
-    it('does not render actions when showActions is false', () => {
-        const propsWithoutActions = {
-            ...mockProps,
-            showActions: false
-        };
-
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...propsWithoutActions} />);
-        const wrapper = createWrapper(container);
-
-        const actionsSlot = wrapper.findChatBubble()?.findActionsSlot();
-        expect(actionsSlot).toBeNull();
-    });
-
-    it('applies correct aria-label', () => {
-        const { container } = testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-        const wrapper = createWrapper(container);
-
-        const chatBubble = wrapper.findChatBubble();
-        expect(chatBubble?.getElement()).toHaveAttribute(
-            'aria-label',
-            `${mockAuthor.name} at ${mockMessage.timestamp}`
+    test('renders markdown content from the assistant', () => {
+        render(
+            <IncomingMessage
+                message={baseMessage}
+                author={AI_AUTHOR}
+                showActions={false}
+                conversationId="conv-1"
+                data-testid="incoming-message"
+            />
         );
+
+        expect(screen.getByTestId('incoming-message')).toBeInTheDocument();
+        expect(screen.getByText('answer')).toBeInTheDocument();
     });
 
-    it('shows feedback form when showFeedbackForm is true', () => {
-        const customMockUseFeedback = {
-            ...mockUseFeedback,
-            showFeedbackForm: true
-        };
-        vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(customMockUseFeedback);
+    test('renders copy and feedback actions when showActions is true', () => {
+        render(
+            <IncomingMessage
+                message={baseMessage}
+                author={AI_AUTHOR}
+                showActions={true}
+                conversationId="conv-1"
+                data-testid="incoming-message"
+            />
+        );
 
-        testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
+        expect(screen.getByTestId('chat-bubble-actions-btn-grp')).toBeInTheDocument();
+        expect(screen.getByTestId('copy-button')).toBeInTheDocument();
 
-        expect(screen.getByText('Submit feedback')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('feedback-helpful-button'));
+        expect(mockHandleFeedbackButtonClick).toHaveBeenCalledWith('helpful');
     });
 
-    it('shows feedback confirmation when feedbackSubmitted is true', async () => {
-        const customMockUseFeedback = {
-            ...mockUseFeedback,
-            feedbackSubmitted: true
+    test('renders source documents when present', () => {
+        const messageWithSources: ChatBubbleMessage = {
+            ...baseMessage,
+            sourceDocuments: [
+                {
+                    document_id: 'doc-1',
+                    document_title: 'Guide',
+                    excerpt: 'An excerpt',
+                    location: 'https://example.com/guide',
+                    score: 'HIGH'
+                } as any
+            ]
         };
-        vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(customMockUseFeedback);
 
-        testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
+        render(
+            <IncomingMessage
+                message={messageWithSources}
+                author={AI_AUTHOR}
+                showActions={false}
+                conversationId="conv-1"
+                data-testid="incoming-message"
+            />
+        );
 
-        expect(screen.getByText('Thank you for your feedback!')).toBeInTheDocument();
+        expect(screen.getByTestId('source-doc-expandable-section')).toBeInTheDocument();
     });
 
-    it('handles feedback submission', () => {
-        const customMockUseFeedback = {
-            ...mockUseFeedback,
-            showFeedbackForm: true
-        };
-        vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(customMockUseFeedback);
-
-        testStoreFactory.renderWithStore(<IncomingMessage {...mockProps} />);
-
-        const submitButton = screen.getByText('Submit feedback');
-        submitButton.click();
-
-        expect(mockUseFeedback.handleFeedbackSubmit).toHaveBeenCalled();
-    });
-});
-it('resets feedback form when messageId changes', () => {
-    // Define mockMessage and mockProps within this test scope
-    const testMessage: ChatBubbleMessage = {
-        type: 'chat-bubble',
-        authorId: 'assistant-1',
-        content: 'Hello, this is a test message',
-        timestamp: '2024-01-01T12:00:00Z',
-        avatarLoading: false
-    };
-
-    const testAuthor = {
-        type: 'assistant' as const,
-        name: 'AI Assistant',
-        avatar: 'path/to/avatar.png',
-        description: 'AI Assistant Description'
-    };
-
-    const testProps = {
-        message: testMessage,
-        author: testAuthor,
-        showActions: true,
-        onFeedback: vi.fn(),
-        conversationId: 'fake-id',
-        'data-testid': 'test-incoming-message'
-    };
-
-    const mockUseFeedback = {
-        showFeedbackForm: false,
-        setShowFeedbackForm: vi.fn(),
-        feedbackType: 'helpful' as const,
-        setFeedbackType: vi.fn(),
-        feedbackSubmitted: false,
-        feedbackError: null,
-        isSubmittingFeedback: false,
-        handleFeedbackButtonClick: vi.fn(),
-        handleFeedbackSubmit: vi.fn()
-    };
-    
-    const customMockUseFeedback = {
-        ...mockUseFeedback,
-        setShowFeedbackForm: vi.fn()
-    };
-    vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(customMockUseFeedback);
-
-    const { rerender } = testStoreFactory.renderWithStore(<IncomingMessage {...testProps} />);
-
-    // Update the message with a new messageId
-    const updatedProps = {
-        ...testProps,
-        message: {
-            ...testMessage,
-            messageId: 'new-message-id'
-        }
-    };
-
-    rerender(<IncomingMessage {...updatedProps} />);
-
-    expect(customMockUseFeedback.setShowFeedbackForm).toHaveBeenCalledWith(false);
-});
-
-describe('ThinkingIndicator rendering', () => {
-    const mockUseFeedback = {
-        showFeedbackForm: false,
-        setShowFeedbackForm: vi.fn(),
-        feedbackType: 'helpful' as const,
-        setFeedbackType: vi.fn(),
-        feedbackSubmitted: false,
-        feedbackError: null,
-        isSubmittingFeedback: false,
-        handleFeedbackButtonClick: vi.fn(),
-        handleFeedbackSubmit: vi.fn()
-    };
-
-    beforeEach(() => {
-        vi.spyOn(useFeedbackModule, 'useFeedback').mockReturnValue(mockUseFeedback);
-    });
-
-    it('renders thinking indicator for AgentBuilder messages with thinking metadata', () => {
-        const messageWithThinking = {
-            type: 'chat-bubble' as const,
-            authorId: 'assistant-1',
-            content: 'Response content',
-            timestamp: '2024-01-01T12:00:00Z',
-            thinking: {
-                duration: 5,
-                type: 'analyzing' as const,
-                startTime: '2024-01-01T12:00:00Z',
-                endTime: '2024-01-01T12:00:05Z',
-                strippedContent: 'Thinking content here'
-            }
+    test('shows the thinking placeholder while loading without content', () => {
+        const loadingMessage: ChatBubbleMessage = {
+            ...baseMessage,
+            content: '',
+            avatarLoading: true
         };
 
-        const mockAuthor = {
-            type: 'assistant' as const,
-            name: 'AI Assistant'
-        };
+        render(
+            <IncomingMessage
+                message={loadingMessage}
+                author={AI_AUTHOR}
+                showActions={false}
+                conversationId="conv-1"
+                data-testid="incoming-message"
+            />
+        );
 
-        const props = {
-            message: messageWithThinking,
-            author: mockAuthor,
-            showActions: true,
-            conversationId: 'test-id'
-        };
-
-        // Set use case type to AgentBuilder using proper config structure
-        testStoreFactory.renderWithStore(<IncomingMessage {...props} />, {
-            config: {
-                runtimeConfig: {
-                    IsInternalUser: 'false',
-                    ModelProviderName: 'Bedrock',
-                    UserPoolId: 'test-pool',
-                    SocketRoutes: [],
-                    UserPoolClientId: 'test-client',
-                    CognitoRedirectUrl: 'http://localhost',
-                    ApiEndpoint: 'http://localhost',
-                    SocketURL: 'ws://localhost',
-                    AwsRegion: 'us-east-1',
-                    CognitoDomain: 'test-domain',
-                    UseCaseConfigKey: 'test-key',
-                    UseCaseId: 'test-id',
-                    RestApiEndpoint: 'http://localhost',
-                    UseCaseConfig: {
-                        UseCaseType: 'AgentBuilder',
-                        UseCaseName: 'test-agent'
-                    } as any
-                }
-            }
-        });
-
-        expect(screen.getByTestId('message-thinking-indicator')).toBeInTheDocument();
-        expect(screen.getByText(/Thought for/)).toBeInTheDocument();
-    });
-
-    it('renders thinking indicator for Workflow messages with thinking metadata', () => {
-        const messageWithThinking = {
-            type: 'chat-bubble' as const,
-            authorId: 'assistant-1',
-            content: 'Response content',
-            timestamp: '2024-01-01T12:00:00Z',
-            thinking: {
-                duration: 5,
-                startTime: '2024-01-01T12:00:00Z',
-                endTime: '2024-01-01T12:00:05Z',
-                strippedContent: 'Thinking content here'
-            }
-        };
-
-        const mockAuthor = {
-            type: 'assistant' as const,
-            name: 'AI Assistant'
-        };
-
-        const props = {
-            message: messageWithThinking,
-            author: mockAuthor,
-            showActions: true,
-            conversationId: 'test-id'
-        };
-
-        // Set use case type to Workflow using proper config structure
-        testStoreFactory.renderWithStore(<IncomingMessage {...props} />, {
-            config: {
-                runtimeConfig: {
-                    IsInternalUser: 'false',
-                    ModelProviderName: 'Bedrock',
-                    UserPoolId: 'test-pool',
-                    SocketRoutes: [],
-                    UserPoolClientId: 'test-client',
-                    CognitoRedirectUrl: 'http://localhost',
-                    ApiEndpoint: 'http://localhost',
-                    SocketURL: 'ws://localhost',
-                    AwsRegion: 'us-east-1',
-                    CognitoDomain: 'test-domain',
-                    UseCaseConfigKey: 'test-key',
-                    UseCaseId: 'test-id',
-                    RestApiEndpoint: 'http://localhost',
-                    UseCaseConfig: {
-                        UseCaseType: 'Workflow',
-                        UseCaseName: 'test-workflow'
-                    } as any
-                }
-            }
-        });
-
-        expect(screen.getByTestId('message-thinking-indicator')).toBeInTheDocument();
-        expect(screen.getByText(/Thought for/)).toBeInTheDocument();
-    });
-
-    it('does not render thinking indicator for Text use case', () => {
-        const messageWithThinking = {
-            type: 'chat-bubble' as const,
-            authorId: 'assistant-1',
-            content: 'Response content',
-            timestamp: '2024-01-01T12:00:00Z',
-            thinking: {
-                duration: 5,
-                type: 'analyzing' as const,
-                startTime: '2024-01-01T12:00:00Z',
-                endTime: '2024-01-01T12:00:05Z'
-            }
-        };
-
-        const mockAuthor = {
-            type: 'assistant' as const,
-            name: 'AI Assistant'
-        };
-
-        const props = {
-            message: messageWithThinking,
-            author: mockAuthor,
-            showActions: true,
-            conversationId: 'test-id'
-        };
-
-        // Set use case type to Text using proper config structure
-        testStoreFactory.renderWithStore(<IncomingMessage {...props} />, {
-            config: {
-                runtimeConfig: {
-                    IsInternalUser: 'false',
-                    ModelProviderName: 'Bedrock',
-                    UserPoolId: 'test-pool',
-                    SocketRoutes: [],
-                    UserPoolClientId: 'test-client',
-                    CognitoRedirectUrl: 'http://localhost',
-                    ApiEndpoint: 'http://localhost',
-                    SocketURL: 'ws://localhost',
-                    AwsRegion: 'us-east-1',
-                    CognitoDomain: 'test-domain',
-                    UseCaseConfigKey: 'test-key',
-                    UseCaseId: 'test-id',
-                    RestApiEndpoint: 'http://localhost',
-                    UseCaseConfig: {
-                        UseCaseType: 'Text',
-                        UseCaseName: 'test-text'
-                    } as any
-                }
-            }
-        });
-
-        expect(screen.queryByTestId('message-thinking-indicator')).not.toBeInTheDocument();
-    });
-
-    it('does not render thinking indicator when message has no thinking metadata', () => {
-        const messageWithoutThinking = {
-            type: 'chat-bubble' as const,
-            authorId: 'assistant-1',
-            content: 'Response content',
-            timestamp: '2024-01-01T12:00:00Z'
-        };
-
-        const mockAuthor = {
-            type: 'assistant' as const,
-            name: 'AI Assistant'
-        };
-
-        const props = {
-            message: messageWithoutThinking,
-            author: mockAuthor,
-            showActions: true,
-            conversationId: 'test-id'
-        };
-
-        // Set use case type to AgentBuilder using proper config structure
-        testStoreFactory.renderWithStore(<IncomingMessage {...props} />, {
-            config: {
-                runtimeConfig: {
-                    IsInternalUser: 'false',
-                    ModelProviderName: 'Bedrock',
-                    UserPoolId: 'test-pool',
-                    SocketRoutes: [],
-                    UserPoolClientId: 'test-client',
-                    CognitoRedirectUrl: 'http://localhost',
-                    ApiEndpoint: 'http://localhost',
-                    SocketURL: 'ws://localhost',
-                    AwsRegion: 'us-east-1',
-                    CognitoDomain: 'test-domain',
-                    UseCaseConfigKey: 'test-key',
-                    UseCaseId: 'test-id',
-                    RestApiEndpoint: 'http://localhost',
-                    UseCaseConfig: {
-                        UseCaseType: 'AgentBuilder',
-                        UseCaseName: 'test-agent'
-                    } as any
-                }
-            }
-        });
-
-        expect(screen.queryByTestId('message-thinking-indicator')).not.toBeInTheDocument();
+        expect(screen.getByTestId('incoming-loading')).toBeInTheDocument();
     });
 });

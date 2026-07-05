@@ -1,9 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React from 'react';
-import LiveRegion from '@cloudscape-design/components/live-region';
-import '../../styles/chat.scss';
 import { useUser } from '../../../../contexts/UserContext';
 import { memo, useMemo, useEffect, useState } from 'react';
 import { parseTraceId, TraceDetails } from '../../../../utils/validation';
@@ -14,21 +11,15 @@ import { ToolUsageInfo } from '../../../../models';
 
 /**
  * Messages component displays a list of chat messages and alerts
- * @component
- * @param {Object} props - Component props
- * @param {Array<Message>} props.messages - Array of message objects to display
- * @param {string} props.conversationId - Unique identifier for the conversation
- * @param {Array<ToolUsageInfo>} props.toolUsage - Optional array of tool usage information
- * @returns {JSX.Element} Messages component
  */
 const Messages = ({
     messages = [],
     conversationId,
     toolUsage = []
 }: {
-    messages: Array<Message>,
-    conversationId: string,
-    toolUsage?: Array<ToolUsageInfo>
+    messages: Array<Message>;
+    conversationId: string;
+    toolUsage?: Array<ToolUsageInfo>;
 }) => {
     const { userId, userName } = useUser();
     const latestMessage: Message = messages[messages.length - 1];
@@ -54,20 +45,10 @@ const Messages = ({
         setProcessedMessages(enhanced);
     }, [messages, userId]);
 
-    /**
-     * Memoized function to check if a message is from the current user
-     * @param {string} authorId - ID of the message author to check
-     * @returns {boolean} True if message is from current user
-     */
     const isUserMessage = useMemo(() => {
         return (authorId: string) => authorId === userId;
     }, [userId]);
 
-    /**
-     * Memoized function to format trace details for copying
-     * @param {TraceDetails} errorMessage - Error message details to format
-     * @returns {string} Formatted trace details
-     */
     const formatTraceDetailsForCopy = useMemo(
         () =>
             (errorMessage: TraceDetails): string => {
@@ -77,11 +58,17 @@ const Messages = ({
     );
 
     return (
-        <div className="messages" role="region" aria-label="Chat" data-testid="messages-container">
-            <LiveRegion hidden={true} assertive={latestMessage?.type === 'alert'} data-testid="live-region">
+        <div
+            className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6"
+            role="region"
+            aria-label="Chat"
+            data-testid="messages-container"
+        >
+            {/* Screen-reader announcement of the latest message */}
+            <div className="sr-only" aria-live={latestMessage?.type === 'alert' ? 'assertive' : 'polite'} data-testid="live-region">
                 {latestMessage?.type === 'alert' && latestMessage.header}
-                {latestMessage?.content}
-            </LiveRegion>
+                {typeof latestMessage?.content === 'string' ? latestMessage.content : undefined}
+            </div>
 
             {processedMessages.map((message, index) => {
                 if (message.type === 'alert') {

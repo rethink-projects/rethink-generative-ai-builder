@@ -6,12 +6,8 @@ import { getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth';
 import { type AuthUser } from '@aws-amplify/auth';
 import { useUserState } from '../hooks/use-user-state';
 import { useAuthEventHandler } from '../hooks/use-auth-event-handler';
-import { useDispatch, useSelector } from 'react-redux';
-import { useGetDeploymentQuery } from '@/store/solutionApi';
-import { setUseCaseConfig } from '@/store/configSlice';
-import { RootState } from '@store/store';
-import { SerializedError } from '@reduxjs/toolkit';
-import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { useDeploymentQuery } from '@/hooks/queries';
+import { useConfigStore } from '@/stores/config-store';
 
 /**
  * Interface defining the shape of the user context data and methods
@@ -32,7 +28,7 @@ export interface UserContextType {
     userEmail: string | null;
     authUser: AuthUser | null;
     userId: string;
-    detailsError?: FetchBaseQueryError | SerializedError;
+    detailsError?: Error | null;
     onSignIn: () => Promise<void>;
     onSignOut: () => Promise<void>;
     getAccessToken: () => Promise<string>;
@@ -87,7 +83,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [setAuthUser, setIsAuthenticated, setUserName, setUserEmail, setUserId, resetUserState, setIsLoading]);
 
     const { getAccessToken, handleSignIn, handleSignOut } = useAuthEventHandler(checkUser, resetUserState);
-    const dispatch = useDispatch();
     const { isAuthenticated } = states;
 
     // Check user authentication state on mount
@@ -95,16 +90,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkUser();
     }, []);
 
-    const runtimeConfig = useSelector((state: RootState) => state.config.runtimeConfig);
+    const runtimeConfig = useConfigStore((state) => state.runtimeConfig);
+    const setUseCaseConfig = useConfigStore((state) => state.setUseCaseConfig);
 
-    const { data: deploymentInfo, error: detailsError } = useGetDeploymentQuery(runtimeConfig?.UseCaseConfigKey as string, {
-        skip: !isAuthenticated
-    });
+    const { data: deploymentInfo, error: detailsError } = useDeploymentQuery(
+        runtimeConfig?.UseCaseConfigKey,
+        isAuthenticated
+    );
     useEffect(() => {
         if (deploymentInfo) {
-            dispatch(setUseCaseConfig(deploymentInfo));
+            setUseCaseConfig(deploymentInfo);
         }
-    }, [deploymentInfo, dispatch]);
+    }, [deploymentInfo, setUseCaseConfig]);
 
     /**
      * Memoized context value to prevent unnecessary re-renders

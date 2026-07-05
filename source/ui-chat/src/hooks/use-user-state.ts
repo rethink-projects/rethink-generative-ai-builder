@@ -3,8 +3,8 @@
 
 import { AuthUser } from 'aws-amplify/auth';
 import { useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { clearPromptTemplate } from '../store/preferencesSlice';
+
+import { usePreferencesStore } from '../stores/preferences-store';
 
 /**
  * Custom hook for managing user state in the application.
@@ -12,7 +12,7 @@ import { clearPromptTemplate } from '../store/preferencesSlice';
  * @returns An object containing user state, setters for updating the state, and a reset function.
  */
 export const useUserState = () => {
-    const dispatch = useDispatch();
+    const clearPromptTemplate = usePreferencesStore((state) => state.clearPromptTemplate);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export const useUserState = () => {
      * Clears the prompt template and resets all user-related state variables.
      */
     const resetUserState = useCallback(() => {
-        dispatch(clearPromptTemplate());
+        clearPromptTemplate();
         setAuthUser(null);
         setIsAuthenticated(false);
         setUserName(null);
