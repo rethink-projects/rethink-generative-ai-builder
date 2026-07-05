@@ -18,7 +18,7 @@ describe('BedrockModelIdInput', () => {
             <BedrockModelIdInput modelData={mockModelData} {...mockFormComponentCallbacks()} />
         );
         expect(screen.getByTestId('model-id-input')).toBeDefined();
-        expect(cloudscapeWrapper.findInput('[data-testid="model-id-input"]')?.getInputValue()).toEqual(
+        expect(cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]')?.getInputValue()).toEqual(
             'amazon.titan-text-express-v1'
         );
     });
@@ -30,7 +30,7 @@ describe('BedrockModelIdInput', () => {
         const { cloudscapeWrapper } = cloudscapeRender(
             <BedrockModelIdInput modelData={mockModelData} {...mockFormComponentCallbacks()} />
         );
-        expect(cloudscapeWrapper.findInput('[data-testid="model-id-input"]')?.getInputValue()).toEqual('');
+        expect(cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]')?.getInputValue()).toEqual('');
     });
 
     test('calls onChange when input value changes', () => {
@@ -40,7 +40,7 @@ describe('BedrockModelIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<BedrockModelIdInput modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         input?.setInputValue('amazon.titan-text-express-v1');
 
         expect(callbacks.onChangeFn).toHaveBeenCalledWith({ modelName: 'amazon.titan-text-express-v1' });
@@ -53,7 +53,7 @@ describe('BedrockModelIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<BedrockModelIdInput modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         input?.setInputValue('');
 
         const formField = cloudscapeWrapper.findFormField('[data-testid="model-id-field"]');
@@ -68,7 +68,7 @@ describe('BedrockModelIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<BedrockModelIdInput modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         input?.setInputValue('invalid-model-id');
 
         const formField = cloudscapeWrapper.findFormField('[data-testid="model-id-field"]');
@@ -83,7 +83,7 @@ describe('BedrockModelIdInput', () => {
         const callbacks = mockFormComponentCallbacks();
         const { cloudscapeWrapper } = cloudscapeRender(<BedrockModelIdInput modelData={mockModelData} {...callbacks} />);
 
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         const formField = cloudscapeWrapper.findFormField('[data-testid="model-id-field"]');
 
         // Test standard model ID
@@ -111,7 +111,7 @@ describe('BedrockModelIdInput', () => {
         const { cloudscapeWrapper } = cloudscapeRender(<BedrockModelIdInput modelData={mockModelData} {...callbacks} />);
 
         // First make it invalid
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         input?.setInputValue('');
 
         // Verify error is shown
@@ -176,7 +176,7 @@ describe('BedrockModelIdInput', () => {
         expect(formField?.findError()?.getElement()).toHaveTextContent('Custom error');
 
         // Change the input to trigger the error setter
-        const input = cloudscapeWrapper.findInput('[data-testid="model-id-input"]');
+        const input = cloudscapeWrapper.findAutosuggest('[data-testid="model-id-input"]');
         input?.setInputValue('new-value');
 
         expect(setModelIdError).toHaveBeenCalled();

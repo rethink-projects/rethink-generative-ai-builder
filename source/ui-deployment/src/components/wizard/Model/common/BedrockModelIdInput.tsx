@@ -1,11 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BaseFormComponentProps } from '@/components/wizard/interfaces/';
 import { updateNumFieldsInError } from '@/components/wizard/utils';
-import { Box, FormField, Input, InputProps } from '@cloudscape-design/components';
+import { Autosuggest, AutosuggestProps, Box, FormField } from '@cloudscape-design/components';
 import { InfoLink } from '@/components/commons';
+import { BEDROCK_MODEL_CATALOG, buildModelOptions } from './bedrock-model-catalog';
 
 export interface BedrockModelIdInputProps extends BaseFormComponentProps {
     modelData: any;
@@ -29,7 +30,9 @@ export const BedrockModelIdInput = (props: BedrockModelIdInputProps) => {
         }
     }, [props.registerErrorSetter]);
 
-    const onModelIdChange = (detail: InputProps.ChangeDetail) => {
+    const modelOptions = useMemo(() => buildModelOptions(BEDROCK_MODEL_CATALOG), []);
+
+    const onModelIdChange = (detail: AutosuggestProps.ChangeDetail) => {
         props.onChangeFn({ modelName: detail.value });
         let errors = '';
         if (detail.value.trim().length === 0) {
@@ -61,10 +64,10 @@ export const BedrockModelIdInput = (props: BedrockModelIdInputProps) => {
             }
             description={
                 <span>
-                    Enter the model ID for your Bedrock on-demand foundation model. A full list of supported models can be found in the{' '}
-                    <a 
-                        href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html" 
-                        target="_blank" 
+                    Pick a model from the list or enter any Bedrock on-demand foundation model ID. A full list of supported models can be found in the{' '}
+                    <a
+                        href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html"
+                        target="_blank"
                         rel="noopener noreferrer"
                     >
                         AWS documentation
@@ -74,11 +77,15 @@ export const BedrockModelIdInput = (props: BedrockModelIdInputProps) => {
             errorText={modelIdError}
             data-testid="model-id-field"
         >
-            <Input
-                placeholder={'Enter model ID...'}
+            <Autosuggest
+                placeholder={'Choose a model or enter a model ID...'}
                 value={props.modelData.modelName || ''}
                 onChange={({ detail }) => onModelIdChange(detail)}
-                autoComplete={false}
+                options={modelOptions}
+                filteringType="auto"
+                enteredTextLabel={(value) => `Use custom model ID: "${value}"`}
+                ariaLabel="Bedrock model ID"
+                empty="No matching models. You can still enter a custom model ID."
                 data-testid="model-id-input"
             />
         </FormField>

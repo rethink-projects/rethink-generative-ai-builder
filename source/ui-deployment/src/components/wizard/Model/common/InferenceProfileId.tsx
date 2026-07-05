@@ -1,11 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BaseFormComponentProps } from '@/components/wizard/interfaces/';
 import { updateNumFieldsInError } from '@/components/wizard/utils';
-import { Box, FormField, Input, InputProps } from '@cloudscape-design/components';
+import { Autosuggest, AutosuggestProps, Box, FormField } from '@cloudscape-design/components';
 import { InfoLink } from '@/components/commons';
+import { BEDROCK_INFERENCE_PROFILE_CATALOG, buildModelOptions } from './bedrock-model-catalog';
 
 export interface InferenceProfileIdInputProps extends BaseFormComponentProps {
     modelData: any;
@@ -30,7 +31,9 @@ export const InferenceProfileIdInput = (props: InferenceProfileIdInputProps) => 
         }
     }, [props.registerErrorSetter]);
 
-    const onInferenceProfileIdChange = (detail: InputProps.ChangeDetail) => {
+    const profileOptions = useMemo(() => buildModelOptions(BEDROCK_INFERENCE_PROFILE_CATALOG), []);
+
+    const onInferenceProfileIdChange = (detail: AutosuggestProps.ChangeDetail) => {
         props.onChangeFn({ inferenceProfileId: detail.value });
         let errors = '';
         if (detail.value.length === 0) {
@@ -73,11 +76,15 @@ export const InferenceProfileIdInput = (props: InferenceProfileIdInputProps) => 
             errorText={inferenceProfileIdError}
             data-testid="inference-profile-id-field"
         >
-            <Input
-                placeholder={'Inference profile ID...'}
-                value={props.modelData.inferenceProfileId}
+            <Autosuggest
+                placeholder={'Choose a profile or enter an inference profile ID...'}
+                value={props.modelData.inferenceProfileId || ''}
                 onChange={({ detail }) => onInferenceProfileIdChange(detail)}
-                autoComplete={false}
+                options={profileOptions}
+                filteringType="auto"
+                enteredTextLabel={(value) => `Use custom inference profile ID: "${value}"`}
+                ariaLabel="Bedrock inference profile ID"
+                empty="No matching profiles. You can still enter a custom inference profile ID."
                 data-testid="inference-profile-id-input"
             />
         </FormField>
