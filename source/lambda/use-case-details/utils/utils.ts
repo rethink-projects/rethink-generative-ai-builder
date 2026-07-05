@@ -27,6 +27,24 @@ export const validateAndParseRequest = (event: APIGatewayProxyEvent): string => 
     return useCaseConfigKey;
 };
 
+/**
+ * Reads the authenticated user's id injected by the custom authorizer.
+ * Never trust user ids supplied in the request itself.
+ */
+export const getUserId = (event: APIGatewayProxyEvent): string | undefined => {
+    return event.requestContext?.authorizer?.UserId;
+};
+
+export const getConversationId = (event: APIGatewayProxyEvent): string => {
+    const conversationId = event.pathParameters?.conversationId;
+
+    if (!conversationId) {
+        throw new Error('ConversationId is missing');
+    }
+
+    return conversationId;
+};
+
 export function castToResponse(params: any): DetailsResponse {
     let useCaseDetails: DetailsResponse = {
         UseCaseName: params.UseCaseName ?? params.Name,

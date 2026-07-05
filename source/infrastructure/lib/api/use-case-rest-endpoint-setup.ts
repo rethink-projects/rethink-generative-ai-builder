@@ -160,6 +160,16 @@ export class UseCaseRestEndpointSetup extends BaseRestEndpoint {
      */
     public readonly detailsGETMethod: api.Method;
 
+    /**
+     * The method used to list a user's conversations from our rest API
+     */
+    public readonly conversationsGETMethod: api.Method;
+
+    /**
+     * The method used to get the messages of a single conversation from our rest API
+     */
+    public readonly conversationDetailsGETMethod: api.Method;
+
     constructor(scope: Construct, id: string, props: UseCaseRestEndpointSetupProps) {
         super(scope, id, props);
 
@@ -211,6 +221,19 @@ export class UseCaseRestEndpointSetup extends BaseRestEndpoint {
         const llmConfigTable = dynamodb.Table.fromTableName(this, 'LLMConfigTable', props.llmConfigTable);
 
         llmConfigTable.grantReadData(this.useCaseDetailsLambda);
+
+        // Allow reading conversation history from any use case conversation table. The table
+        // name is only known at runtime (resolved from the use case config), so the resource
+        // is scoped by the ConversationTable logical id pattern, mirroring the feedback lambda.
+        this.useCaseDetailsLambdaRole.addToPolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: ['dynamodb:GetItem', 'dynamodb:Query'],
+                resources: [
+                    `arn:${cdk.Aws.PARTITION}:dynamodb:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:table/*-ChatStorageSetupChatStorageNestedStackChat*-ConversationTable75C14D21*`
+                ]
+            })
+        );
 
         const logRetention = createCustomResourceForLambdaLogRetention(
             this,
@@ -273,6 +296,10 @@ export class UseCaseRestEndpointSetup extends BaseRestEndpoint {
         } as api.MethodOptions;
 
         this.detailsGETMethod = this.createUseCaseDetailsApi(createApiRoutesCondition);
+
+        const conversationMethods = this.createConversationsApi(createApiRoutesCondition);
+        this.conversationsGETMethod = conversationMethods.listMethod;
+        this.conversationDetailsGETMethod = conversationMethods.detailsMethod;
     }
 
     protected createDlq(props: UseCaseRestEndpointSetupProps): sqs.Queue {
@@ -450,5 +477,67 @@ export class UseCaseRestEndpointSetup extends BaseRestEndpoint {
         ]);
 
         return getUseCaseMethod;
+    }
+
+    /**
+     * Creates the conversation history routes backed by the use case details lambda:
+     * - GET /conversations/{useCaseConfigKey} lists the authenticated user's conversations
+     * - GET /conversations/{useCaseConfigKey}/{conversationId} returns a conversation's messages
+     */
+    private createConversationsApi(createApiRoutesCondition: cdk.CfnCondition): {
+        listMethod: api.Method;
+        detailsMethod: api.Method;
+    } {
+        const useCaseDetailsIntegration = new api.LambdaIntegration(this.useCaseDetailsLambda, {
+            passthroughBehavior: api.PassthroughBehavior.NEVER
+        });
+
+        const conversationsResource = this.restApi.root.addResource('conversations');
+        const conversationsListResource = conversationsResource.addResource('{useCaseConfigKey}');
+        const conversationDetailsResource = conversationsListResource.addResource('{conversationId}');
+
+        const corsConfiguration = {
+            allowOrigins: ['*'],
+            allowHeaders: ['Content-Type, Access-Control-Allow-Headers, X-Requested-With, Authorization'],
+            allowMethods: ['GET', 'OPTIONS']
+        };
+        conversationsListResource.addCorsPreflight(corsConfiguration);
+        conversationDetailsResource.addCorsPreflight(corsConfiguration);
+
+        const listMethod = conversationsListResource.addMethod('GET', useCaseDetailsIntegration, {
+            operationName: 'ListConversations',
+            authorizationType: api.AuthorizationType.CUSTOM,
+            requestParameters: {
+                'method.request.header.authorization': true
+            },
+            ...this.methodOptions
+        });
+
+        const detailsMethod = conversationDetailsResource.addMethod('GET', useCaseDetailsIntegration, {
+            operationName: 'GetConversationDetails',
+            authorizationType: api.AuthorizationType.CUSTOM,
+            requestParameters: {
+                'method.request.header.authorization': true
+            },
+            ...this.methodOptions
+        });
+
+        (conversationsResource.node.defaultChild as cdk.CfnResource).cfnOptions.condition = createApiRoutesCondition;
+        for (const construct of [listMethod, detailsMethod, conversationsListResource, conversationDetailsResource]) {
+            cdk.Aspects.of(construct).add(new ResourceConditionsAspect(createApiRoutesCondition, true), {
+                priority: cdk.AspectPriority.MUTATING
+            });
+        }
+
+        for (const resource of [conversationsListResource, conversationDetailsResource]) {
+            NagSuppressions.addResourceSuppressions(resource.node.findChild('GET'), [
+                {
+                    id: 'AwsSolutions-COG4',
+                    reason: 'A Custom authorizer must be used in order to authenticate using Cognito user groups'
+                }
+            ]);
+        }
+
+        return { listMethod, detailsMethod };
     }
 }

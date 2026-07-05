@@ -557,3 +557,90 @@ describe('CreateApiRoutesCondition tests', () => {
         });
     });
 });
+
+describe('UseCaseRestEndpoint conversation history routes', () => {
+    let template: Template;
+
+    beforeAll(() => {
+        const app = new cdk.App({
+            context: rawCdkJson.context
+        });
+        const stack = new cdk.Stack(app, 'TestStack');
+
+        const mockProps = {
+            existingApiId: 'test-api-id',
+            existingApiRootResourceId: 'test-root-resource-id',
+            customResourceLambda: new lambda.Function(stack, 'MockCustomResourceLambda', {
+                code: lambda.Code.fromAsset('../infrastructure/test/mock-lambda-func/node-lambda'),
+                runtime: COMMERCIAL_REGION_LAMBDA_NODE_RUNTIME,
+                handler: 'index.handler'
+            }),
+            deployVPCCondition: new cdk.CfnCondition(stack, 'MockVPCCondition', {
+                expression: cdk.Fn.conditionEquals('true', 'true')
+            }),
+            createApiResourcesCondition: new cdk.CfnCondition(stack, 'CreateApiResourcesCondition', {
+                expression: cdk.Fn.conditionEquals('true', 'false')
+            }),
+            privateSubnetIds: 'pid1, pid2',
+            securityGroupIds: 'sid1, sid2',
+            llmConfigTable: 'mock-table',
+            stackDeploymentSource: StackDeploymentSource.DEPLOYMENT_PLATFORM,
+            identifier: 'test-uuid'
+        };
+
+        new UseCaseRestEndpointSetup(stack, 'TestUseCaseEndpoint', mockProps);
+        template = Template.fromStack(stack);
+    });
+
+    it('should create the conversations list route with the custom authorizer', () => {
+        template.hasResourceProperties('AWS::ApiGateway::Resource', {
+            PathPart: 'conversations'
+        });
+
+        template.hasResourceProperties('AWS::ApiGateway::Method', {
+            HttpMethod: 'GET',
+            AuthorizationType: 'CUSTOM',
+            OperationName: 'ListConversations',
+            RequestParameters: {
+                'method.request.header.authorization': true
+            }
+        });
+    });
+
+    it('should create the conversation details route with the custom authorizer', () => {
+        template.hasResourceProperties('AWS::ApiGateway::Resource', {
+            PathPart: '{conversationId}'
+        });
+
+        template.hasResourceProperties('AWS::ApiGateway::Method', {
+            HttpMethod: 'GET',
+            AuthorizationType: 'CUSTOM',
+            OperationName: 'GetConversationDetails',
+            RequestParameters: {
+                'method.request.header.authorization': true
+            }
+        });
+    });
+
+    it('should grant the details lambda read access to conversation tables', () => {
+        template.hasResourceProperties('AWS::IAM::Policy', {
+            PolicyDocument: {
+                Statement: Match.arrayWith([
+                    Match.objectLike({
+                        Action: ['dynamodb:GetItem', 'dynamodb:Query'],
+                        Effect: 'Allow',
+                        Resource: {
+                            'Fn::Join': Match.arrayWith([
+                                Match.arrayWith([
+                                    Match.stringLikeRegexp(
+                                        ':table/\\*-ChatStorageSetupChatStorageNestedStackChat\\*-ConversationTable75C14D21\\*'
+                                    )
+                                ])
+                            ])
+                        }
+                    })
+                ])
+            }
+        });
+    });
+});
